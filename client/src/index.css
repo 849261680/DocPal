@@ -54,5 +54,6 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Noto Sans SC', 'Inter', sans-serif;
   }
 }

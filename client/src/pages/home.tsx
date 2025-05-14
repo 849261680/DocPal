@@ -19,17 +19,17 @@ export default function Home() {
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <BrainCog className="text-primary h-6 w-6" />
-            <h1 className="text-xl font-semibold text-neutral-800">RAG Enterprise Q&A Assistant</h1>
+            <h1 className="text-xl font-semibold text-neutral-800">RAG 企业知识库问答系统</h1>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
             <button className="px-3 py-1.5 text-neutral-600 text-sm font-medium hover:bg-neutral-100 rounded-md transition">
-              Help
+              帮助
             </button>
             <button 
               className="px-3 py-1.5 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary/90 transition shadow-sm"
               onClick={() => setProcessingModalOpen(hasProcessingDocs)}
             >
-              Settings
+              设置
             </button>
           </div>
         </div>

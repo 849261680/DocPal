@@ -80,10 +80,10 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         <div className="flex items-center justify-between mb-2">
           <span className="font-medium text-neutral-700 flex items-center gap-1.5">
             <Quote className="h-3 w-3 text-accent" />
-            Source Reference
+            来源引用
           </span>
           <span className="text-xs text-neutral-500">
-            {source.documentName} {source.page ? `• Page ${source.page}` : ''}
+            {source.documentName} {source.page ? `• 页码 ${source.page}` : ''}
           </span>
         </div>
         <p className="text-neutral-600 text-sm">
@@ -103,7 +103,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       >
         {formatMessageContent(message.content)}
         
-        {!isUserMessage && message.sources && message.sources.length > 0 && (
+        {!isUserMessage && message.sources && Array.isArray(message.sources) && message.sources.length > 0 && (
           <div className="mt-4">
             {renderSourceReferences(message.sources as SourceReference[])}
           </div>

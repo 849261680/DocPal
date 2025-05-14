@@ -37,8 +37,8 @@ export default function ChatPanel() {
       setInput("");
     } catch (error) {
       toast({
-        title: "Failed to send message",
-        description: "There was an error sending your message. Please try again.",
+        title: "消息发送失败",
+        description: "发送消息时出现错误，请重试。",
         variant: "destructive",
       });
     }
@@ -47,7 +47,7 @@ export default function ChatPanel() {
   const handleClearChat = async () => {
     if (messages.length === 0) return;
     
-    if (confirm("Are you sure you want to clear the chat history?")) {
+    if (confirm("确定要清空聊天记录吗？")) {
       await clearChat();
     }
   };
@@ -65,14 +65,14 @@ export default function ChatPanel() {
                   <Layers className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-neutral-800 mb-2">Welcome to Enterprise Q&A Assistant</h2>
-                  <p className="text-neutral-600 text-sm mb-3">I can help you find answers from your uploaded documents. To get started:</p>
+                  <h2 className="text-lg font-semibold text-neutral-800 mb-2">欢迎使用企业知识库问答系统</h2>
+                  <p className="text-neutral-600 text-sm mb-3">我可以帮您从已上传的文档中找到问题的答案。开始使用请：</p>
                   <ol className="text-sm text-neutral-600 space-y-1 list-decimal pl-5 mb-4">
-                    <li>Upload PDF or DOCX documents in the sidebar</li>
-                    <li>Wait for documents to be processed and indexed</li>
-                    <li>Ask questions about your documents in the chat below</li>
+                    <li>在左侧边栏上传PDF或DOCX文档</li>
+                    <li>等待文档处理和索引完成</li>
+                    <li>在下方聊天框中提问与您文档相关的问题</li>
                   </ol>
-                  <p className="text-sm text-neutral-500">I'll search for the most relevant information and provide answers with references to the source documents.</p>
+                  <p className="text-sm text-neutral-500">我会搜索最相关的信息，并提供带有文档来源引用的答案。</p>
                 </div>
               </div>
             </div>
@@ -111,7 +111,7 @@ export default function ChatPanel() {
               ref={textareaRef}
               rows={1}
               className="w-full rounded-lg border border-neutral-300 focus:border-primary focus:ring-2 focus:ring-primary/20 px-4 py-3 pr-14 text-neutral-800 placeholder-neutral-400 text-sm resize-none"
-              placeholder="Ask something about your documents..."
+              placeholder="询问关于您文档的问题..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={isLoading}
@@ -128,7 +128,7 @@ export default function ChatPanel() {
           
           <div className="mt-2 flex items-center justify-between text-xs text-neutral-500">
             <div>
-              <span>{tokensUsed}</span> tokens used
+              <span>{tokensUsed}</span> tokens已使用
             </div>
             <Button 
               variant="ghost" 
@@ -138,7 +138,7 @@ export default function ChatPanel() {
               disabled={messages.length === 0}
             >
               <Trash2 className="h-3 w-3 mr-1" />
-              Clear Chat
+              清空聊天
             </Button>
           </div>
         </div>

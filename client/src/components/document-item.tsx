@@ -26,8 +26,8 @@ export default function DocumentItem({ document }: DocumentItemProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
     } catch (error) {
       toast({
-        title: "Delete failed",
-        description: "Failed to delete document. Please try again.",
+        title: "删除失败",
+        description: "无法删除文档，请重试。",
         variant: "destructive"
       });
     } finally {
@@ -57,14 +57,14 @@ export default function DocumentItem({ document }: DocumentItemProps) {
         return (
           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
             <span className="h-1.5 w-1.5 rounded-full bg-success mr-1"></span>
-            Indexed
+            已索引
           </span>
         );
       case ProcessingStatus.FAILED:
         return (
           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
             <span className="h-1.5 w-1.5 rounded-full bg-destructive mr-1"></span>
-            Failed
+            失败
           </span>
         );
       default:

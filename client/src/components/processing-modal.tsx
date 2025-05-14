@@ -77,7 +77,7 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
     if (processingDocuments.length === 0) {
       return (
         <div className="text-center py-4">
-          <p className="text-neutral-600">No documents are currently being processed.</p>
+          <p className="text-neutral-600">当前没有正在处理的文档。</p>
         </div>
       );
     }
@@ -89,7 +89,7 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
       <div className="space-y-4">
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-neutral-700">Text Extraction</span>
+            <span className="font-medium text-neutral-700">文本提取</span>
             <StatusLabel status={getStepStatus("extracting", document)} />
           </div>
           <Progress value={getStepStatus("extracting", document).progress} className="h-1.5" />
@@ -97,7 +97,7 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
         
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-neutral-700">Chunking & Cleaning</span>
+            <span className="font-medium text-neutral-700">文本分块与清洗</span>
             <StatusLabel status={getStepStatus("chunking", document)} />
           </div>
           <Progress value={getStepStatus("chunking", document).progress} className="h-1.5" />
@@ -105,7 +105,7 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
         
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-neutral-700">Vector Embedding</span>
+            <span className="font-medium text-neutral-700">向量嵌入</span>
             <StatusLabel status={getStepStatus("embedding", document)} />
           </div>
           <Progress value={getStepStatus("embedding", document).progress} className="h-1.5" />
@@ -113,7 +113,7 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
         
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-neutral-700">Indexing</span>
+            <span className="font-medium text-neutral-700">建立索引</span>
             <StatusLabel status={getStepStatus("indexing", document)} />
           </div>
           <Progress value={getStepStatus("indexing", document).progress} className="h-1.5" />
@@ -129,9 +129,9 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
             <Cog className="text-primary h-8 w-8 animate-pulse" />
           </div>
-          <DialogTitle className="text-center">Processing Documents</DialogTitle>
+          <DialogTitle className="text-center">文档处理中</DialogTitle>
           <p className="text-center text-neutral-600 text-sm mt-1">
-            This may take a few minutes depending on document size
+            根据文档大小，这可能需要几分钟时间
           </p>
         </DialogHeader>
         
@@ -143,13 +143,13 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
             onClick={onClose}
             disabled={!canClose}
           >
-            Cancel
+            取消
           </Button>
           <Button
             onClick={onClose}
             disabled={!canClose}
           >
-            {canClose ? "Close" : "Processing..."}
+            {canClose ? "关闭" : "处理中..."}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -168,7 +168,7 @@ function StatusLabel({ status }: StatusLabelProps) {
   if (status.status === "completed") {
     return (
       <span className="text-success flex items-center">
-        <CheckCircle className="h-3 w-3 mr-1" /> Complete
+        <CheckCircle className="h-3 w-3 mr-1" /> 完成
       </span>
     );
   }
@@ -177,5 +177,5 @@ function StatusLabel({ status }: StatusLabelProps) {
     return <span className="text-neutral-700">{status.progress}%</span>;
   }
   
-  return <span className="text-neutral-500">Waiting...</span>;
+  return <span className="text-neutral-500">等待中...</span>;
 }

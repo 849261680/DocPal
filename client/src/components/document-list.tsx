@@ -31,8 +31,8 @@ export default function DocumentList({ documents, isLoading }: DocumentListProps
     return (
       <div className="px-4 py-8 text-center">
         <Folder className="text-neutral-300 h-10 w-10 mx-auto mb-2" />
-        <p className="text-sm text-neutral-500">No documents uploaded yet</p>
-        <p className="text-xs text-neutral-400 mt-1">Upload documents to start building your knowledge base</p>
+        <p className="text-sm text-neutral-500">尚未上传任何文档</p>
+        <p className="text-xs text-neutral-400 mt-1">上传文档开始构建您的知识库</p>
       </div>
     );
   }

@@ -23,8 +23,8 @@ export default function FileUploader() {
     
     if (!validFiles) {
       toast({
-        title: "Invalid file type",
-        description: "Only PDF and DOCX files are supported",
+        title: "文件类型无效",
+        description: "仅支持PDF和DOCX文件",
         variant: "destructive"
       });
       return;
@@ -36,8 +36,8 @@ export default function FileUploader() {
     
     if (oversizedFiles.length > 0) {
       toast({
-        title: "File too large",
-        description: `${oversizedFiles.length > 1 ? "Some files exceed" : "File exceeds"} the maximum size of 10MB`,
+        title: "文件太大",
+        description: `${oversizedFiles.length > 1 ? "部分文件超过" : "文件超过"}最大10MB限制`,
         variant: "destructive"
       });
       return;
@@ -86,7 +86,7 @@ export default function FileUploader() {
         }).then(async (res) => {
           if (!res.ok) {
             const errorText = await res.text();
-            throw new Error(errorText || "Upload failed");
+            throw new Error(errorText || "上传失败");
           }
           return res.json();
         });
@@ -100,14 +100,14 @@ export default function FileUploader() {
       if (inputRef.current) inputRef.current.value = "";
       
       toast({
-        title: "Upload successful",
-        description: `${selectedFiles.length > 1 ? "Documents" : "Document"} uploaded and being processed.`
+        title: "上传成功",
+        description: `${selectedFiles.length > 1 ? "文档已" : "文档已"}上传并正在处理中。`
       });
     } catch (error) {
       console.error("Upload error:", error);
       toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload document(s)",
+        title: "上传失败",
+        description: error instanceof Error ? error.message : "无法上传文档",
         variant: "destructive"
       });
     } finally {
@@ -143,22 +143,22 @@ export default function FileUploader() {
               <CheckCircle className="h-10 w-10 text-success mx-auto mb-2" />
               <p className="text-sm font-medium text-neutral-600 mb-1">
                 {selectedFiles.length === 1 
-                  ? `${selectedFiles[0].name} selected`
-                  : `${selectedFiles.length} files selected`}
+                  ? `已选择: ${selectedFiles[0].name}`
+                  : `已选择 ${selectedFiles.length} 个文件`}
               </p>
             </>
           ) : (
             <>
               <Upload className="h-10 w-10 text-neutral-400 mx-auto mb-2" />
-              <p className="text-sm font-medium text-neutral-600 mb-1">Drag files here or click to browse</p>
-              <p className="text-xs text-neutral-500">Supported formats: PDF, DOCX</p>
+              <p className="text-sm font-medium text-neutral-600 mb-1">将文件拖放到此处或点击浏览</p>
+              <p className="text-xs text-neutral-500">支持格式: PDF, DOCX</p>
             </>
           )}
         </div>
       </div>
       
       <div className="mt-3 flex justify-between items-center">
-        <span className="text-xs text-neutral-500">Max size: 10MB per file</span>
+        <span className="text-xs text-neutral-500">最大文件: 10MB/个</span>
         <Button
           size="sm"
           onClick={(e) => {
@@ -171,9 +171,9 @@ export default function FileUploader() {
           {isUploading ? (
             <>
               <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-              Uploading...
+              上传中...
             </>
-          ) : "Upload Files"}
+          ) : "上传文件"}
         </Button>
       </div>
     </div>

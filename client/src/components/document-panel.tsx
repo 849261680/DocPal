@@ -20,13 +20,13 @@ export default function DocumentPanel() {
       await apiRequest("POST", "/api/documents/refresh", {});
       await refetch();
       toast({
-        title: "Index refreshed",
-        description: "The knowledge base has been refreshed successfully."
+        title: "索引已刷新",
+        description: "知识库已成功刷新。"
       });
     } catch (error) {
       toast({
-        title: "Refresh failed",
-        description: "Failed to refresh the knowledge base. Please try again.",
+        title: "刷新失败",
+        description: "无法刷新知识库。请重试。",
         variant: "destructive"
       });
     } finally {
@@ -35,7 +35,7 @@ export default function DocumentPanel() {
   };
 
   const clearKnowledgeBase = async () => {
-    if (!confirm("Are you sure you want to clear the knowledge base? This will delete all documents and cannot be undone.")) {
+    if (!confirm("确定要清空知识库吗？此操作将删除所有文档且无法撤销。")) {
       return;
     }
 
@@ -44,13 +44,13 @@ export default function DocumentPanel() {
       await apiRequest("DELETE", "/api/documents", {});
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
       toast({
-        title: "Knowledge base cleared",
-        description: "All documents have been removed from the knowledge base."
+        title: "知识库已清空",
+        description: "所有文档已从知识库中移除。"
       });
     } catch (error) {
       toast({
-        title: "Clear failed",
-        description: "Failed to clear the knowledge base. Please try again.",
+        title: "清空失败",
+        description: "无法清空知识库。请重试。",
         variant: "destructive"
       });
     } finally {
@@ -63,37 +63,37 @@ export default function DocumentPanel() {
   };
 
   const getLastUpdated = () => {
-    if (documents.length === 0) return "Never";
+    if (documents.length === 0) return "从未";
     
     const mostRecent = new Date(Math.max(...documents.map(d => new Date(d.uploadedAt).getTime())));
     const now = new Date();
     const diffMs = now.getTime() - mostRecent.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     
-    if (diffMins < 1) return "Just now";
-    if (diffMins === 1) return "1 min ago";
-    if (diffMins < 60) return `${diffMins} mins ago`;
+    if (diffMins < 1) return "刚刚";
+    if (diffMins === 1) return "1分钟前";
+    if (diffMins < 60) return `${diffMins}分钟前`;
     
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours === 1) return "1 hour ago";
-    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffHours === 1) return "1小时前";
+    if (diffHours < 24) return `${diffHours}小时前`;
     
     const diffDays = Math.floor(diffHours / 24);
-    if (diffDays === 1) return "1 day ago";
-    return `${diffDays} days ago`;
+    if (diffDays === 1) return "1天前";
+    return `${diffDays}天前`;
   };
 
   return (
     <aside className="bg-white border-r border-neutral-200 w-full md:w-96 flex flex-col h-full overflow-hidden transition-all duration-300">
       <div className="border-b border-neutral-200 px-4 py-3">
-        <h2 className="font-semibold text-neutral-800">Knowledge Base</h2>
+        <h2 className="font-semibold text-neutral-800">知识库</h2>
       </div>
       
       {/* Upload section */}
       <div className="px-4 py-5 border-b border-neutral-200">
         <div className="mb-4">
-          <h3 className="text-sm font-medium text-neutral-700 mb-1">Upload Documents</h3>
-          <p className="text-xs text-neutral-500">Upload PDF or DOCX files to build your knowledge base</p>
+          <h3 className="text-sm font-medium text-neutral-700 mb-1">上传文档</h3>
+          <p className="text-xs text-neutral-500">上传PDF或DOCX文件以构建您的知识库</p>
         </div>
         
         <FileUploader />
@@ -102,13 +102,13 @@ export default function DocumentPanel() {
       {/* Document list */}
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-3 flex justify-between items-center border-b border-neutral-200 bg-neutral-50">
-          <h3 className="text-sm font-medium text-neutral-700">Uploaded Documents</h3>
+          <h3 className="text-sm font-medium text-neutral-700">已上传文档</h3>
           <div className="flex gap-2">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              title="Refresh Index"
+              title="刷新索引"
               onClick={refreshIndex}
               disabled={isRefreshing || documents.length === 0}
             >
@@ -118,7 +118,7 @@ export default function DocumentPanel() {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              title="Clear Knowledge Base"
+              title="清空知识库"
               onClick={clearKnowledgeBase}
               disabled={isClearing || documents.length === 0}
             >
@@ -135,13 +135,13 @@ export default function DocumentPanel() {
         <div className="flex items-center justify-between text-xs text-neutral-600">
           <div className="flex items-center gap-3">
             <div>
-              <span className="font-medium">{documents.length}</span> Documents
+              <span className="font-medium">{documents.length}</span> 文档
             </div>
             <div>
-              <span className="font-medium">{countChunks()}</span> Chunks
+              <span className="font-medium">{countChunks()}</span> 文本块
             </div>
           </div>
-          <span className="text-xs text-neutral-500">Last updated: {getLastUpdated()}</span>
+          <span className="text-xs text-neutral-500">最后更新: {getLastUpdated()}</span>
         </div>
       </div>
     </aside>

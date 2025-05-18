@@ -4,7 +4,7 @@ langchain
 langchain-core
 sentence-transformers>=2.2.2
 faiss-cpu
-numpy>=1.20.0
+numpy~=1.26.4
 python-dotenv
 python-multipart
 httpx

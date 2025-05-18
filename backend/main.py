@@ -32,16 +32,13 @@ app = FastAPI(
 
 # CORS (Cross-Origin Resource Sharing) 中间件配置
 # 指定允许的源，而不是使用通配符
-origins = [
-    "http://localhost:5173",  # Vite开发服务器默认端口
-    "http://localhost:3000",  # 其他可能的开发端口
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000"
-]
+# 从环境变量读取允许的源，如果没有设置，则默认为本地开发环境的地址
+allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000")
+origins = [origin.strip() for origin in allowed_origins_str.split(',')]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # 使用具体的源列表
+    allow_origins=origins,  # 使用从环境变量解析的源列表
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], # 允许所有标准方法
     allow_headers=["*"],  # 允许所有请求头

@@ -44,10 +44,11 @@ MANIFEST
 .env.*
 !/.env.example # Allow .env.example
 
-# Data and Index (Optional - uncomment if you don\'t want to commit these)
-# index/faiss_store.index
-# index/faiss_store.meta.pkl
-# data/uploaded_files/
+# Data and Index (Optional - uncomment if you don't want to commit these)
+index/faiss_store.index
+index/faiss_store.meta.pkl
+data/uploaded_files/
+uploads/
 
 # Other
 *.tar.gz

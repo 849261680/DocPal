@@ -9,6 +9,7 @@ python-multipart
 httpx
 PyMuPDF==1.22.5
 docx2txt
-torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu
+torch==2.2.1 --index-url https://download.pytorch.org/whl/cpu
+transformers==4.38.2
 typing_extensions
 pydantic 

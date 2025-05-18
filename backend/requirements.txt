@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+langchain
 langchain-core
 sentence-transformers>=2.2.2
 faiss-cpu

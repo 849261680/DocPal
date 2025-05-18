@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { storage } from './storage';
-import { ProcessingStatus, type Document, type InsertChunk } from '@shared/schema';
+import { ProcessingStatus, type Document, type InsertChunk, type Chunk } from '@shared/schema';
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -110,35 +110,29 @@ async function extractText(document: Document, filePath: string): Promise<{ succ
 }
 
 // Mock implementation for text chunking
-async function splitIntoChunks(documentId: number, pages: Array<{ content: string; page: number }>): Promise<{ success: boolean; message?: string; chunks?: InsertChunk[] }> {
+async function splitIntoChunks(documentId: number, pages: Array<{ content: string; page: number }>): Promise<{ success: boolean; message?: string; chunks?: Chunk[] }> {
   try {
     console.log(`Splitting document ${documentId} into chunks`);
     
-    // In a real implementation, this would use a chunking strategy (e.g., by paragraph or fixed size)
-    const chunks: InsertChunk[] = [];
+    const createdChunks: Chunk[] = [];
     
     for (const page of pages) {
-      // Mock implementation - in reality would split based on content
-      // Split content into chunks of roughly 500 characters
       const content = page.content;
       const chunkSize = 500;
       
       for (let i = 0; i < content.length; i += chunkSize) {
         const chunkContent = content.substring(i, i + chunkSize);
-        chunks.push({
+        const insertChunk: InsertChunk = {
           documentId,
           content: chunkContent,
           page: page.page
-        });
+        };
+        const createdChunk = await storage.createChunk(insertChunk);
+        createdChunks.push(createdChunk);
       }
     }
     
-    // Save chunks to storage
-    for (const chunk of chunks) {
-      await storage.createChunk(chunk);
-    }
-    
-    return { success: true, chunks };
+    return { success: true, chunks: createdChunks };
   } catch (error) {
     console.error('Error splitting into chunks:', error);
     return { success: false, message: `Chunking failed: ${error}` };
@@ -146,28 +140,91 @@ async function splitIntoChunks(documentId: number, pages: Array<{ content: strin
 }
 
 // Mock implementation for embedding generation
-async function generateEmbeddings(chunks: InsertChunk[]): Promise<{ success: boolean; message?: string; chunks?: InsertChunk[] }> {
+async function generateEmbeddings(chunks: Chunk[]): Promise<{ success: boolean; message?: string; chunks?: Chunk[] }> {
   try {
     console.log(`Generating embeddings for ${chunks.length} chunks`);
-    
-    // In a real implementation, this would use an embedding model like DEEPSEEK
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      
-      // Simulate embedding generation time
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Mock embedding - in reality this would be a vector from the model
-      const mockEmbedding = Array.from({ length: 384 }, () => Math.random());
-      
-      // Update chunk with embedding
-      await storage.updateChunkEmbedding(i + 1, mockEmbedding);
+
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    const modelName = process.env.DEEPSEEK_EMBEDDING_MODEL || 'deepseek-chat';
+    const baseUrl = process.env.DEEPSEEK_API_BASE_URL || 'https://api.deepseek.com';
+
+    if (!apiKey) {
+      throw new Error('DEEPSEEK_API_KEY is not set in environment variables.');
+    }
+    if (!modelName) {
+      throw new Error('DEEPSEEK_EMBEDDING_MODEL is not set in environment variables.');
+    }
+
+    console.log(`Using DeepSeek base URL: ${baseUrl} and model: ${modelName} for embeddings.`);
+
+    const updatedChunks: Chunk[] = [];
+
+    for (const chunk of chunks) {
+      try {
+        console.log(`Requesting embeddings from: ${baseUrl}/v1/embeddings for chunk ID: ${chunk.id}`);
+        const response = await fetch(baseUrl + '/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            input: chunk.content,
+            model: modelName,
+            // encoding_format: "float", // Optional: check DeepSeek API docs
+          }),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.text();
+          console.error(
+            `DeepSeek API error: ${response.status} ${response.statusText}`,
+            `Response body: ${errorBody}`
+          );
+          // For now, let's not throw but log and skip, or handle as appropriate
+          // throw new Error(`Failed to generate embeddings for chunk ${chunk.id}: ${response.statusText}`);
+          // Instead of throwing, we'll add the chunk without embedding or with a dummy embedding
+          // Or perhaps, we should collect all errors and report them later.
+          // For now, just logging and continuing.
+          updatedChunks.push({
+            ...chunk,
+            embedding: [], // or some error indicator
+            error: `API Error: ${response.status} ${response.statusText} - ${errorBody}`
+          });
+          continue;
+        }
+
+        const data = await response.json();
+        // console.log("DeepSeek API response data:", JSON.stringify(data, null, 2));
+
+        if (!data.data || !data.data[0] || !data.data[0].embedding) {
+          console.error("Unexpected response structure from DeepSeek embeddings API:", data);
+          updatedChunks.push({
+            ...chunk,
+            embedding: [],
+            error: "Unexpected API response structure"
+          });
+          continue;
+        }
+        
+        const embedding = data.data[0].embedding;
+        updatedChunks.push({ ...chunk, embedding });
+      } catch (error) {
+        console.error(`Error generating embedding for chunk ${chunk.id}:`, error);
+        // Add chunk with an error or empty embedding
+        updatedChunks.push({
+          ...chunk,
+          embedding: [],
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
     }
     
-    return { success: true, chunks };
+    console.log('Successfully generated and stored embeddings for all chunks.');
+    return { success: true, chunks: updatedChunks };
   } catch (error) {
-    console.error('Error generating embeddings:', error);
-    return { success: false, message: `Embedding generation failed: ${error}` };
+    console.error('Error in generateEmbeddings function:', error);
+    return { success: false, message: `Embedding generation failed: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
 

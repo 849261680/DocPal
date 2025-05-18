@@ -18,13 +18,14 @@ export default function FileUploader() {
     // Check file types
     const validFiles = Array.from(files).every(file => 
       file.type === "application/pdf" || 
-      file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      file.type === "text/plain" // 添加TXT支持
     );
     
     if (!validFiles) {
       toast({
         title: "文件类型无效",
-        description: "仅支持PDF和DOCX文件",
+        description: "仅支持PDF, DOCX和TXT文件",
         variant: "destructive"
       });
       return;
@@ -71,29 +72,78 @@ export default function FileUploader() {
     if (!selectedFiles || selectedFiles.length === 0) return;
     
     setIsUploading(true);
+    console.log("开始上传文件...");
     
     try {
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
+        console.log(`准备上传文件: ${file.name}, 大小: ${file.size} 字节, 类型: ${file.type}`);
+        
         const formData = new FormData();
         formData.append("file", file);
         
-        // Upload file
-        await fetch("/api/documents", {
-          method: "POST",
-          body: formData,
-          credentials: "include"
-        }).then(async (res) => {
-          if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(errorText || "上传失败");
-          }
-          return res.json();
+        // 显示正在上传哪个文件
+        toast({
+          title: `上传中 (${i + 1}/${selectedFiles.length})`,
+          description: file.name
         });
+        
+        // 添加超时处理 - 增加到120秒 (2分钟)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2分钟超时
+        
+        try {
+          // Upload file - 修改上传路径，并添加超时控制
+          const backendUrl = window.location.hostname === 'localhost' ? 
+            'http://127.0.0.1:8000/api/upload_doc/' : '/api/upload_doc/';
+            
+          console.log(`正在上传文件到: ${backendUrl}`);
+          
+          const response = await fetch(backendUrl, {
+            method: "POST",
+            body: formData,
+            credentials: 'include',
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId); // 清除超时
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`上传失败: ${response.status} ${response.statusText}`, errorText);
+            throw new Error(errorText || `上传失败: ${response.status} ${response.statusText}`);
+          }
+          
+          const result = await response.json();
+          console.log(`文件 ${file.name} 上传成功:`, result);
+        } catch (error) {
+          if (error.name === 'AbortError') {
+            console.error(`上传文件 ${file.name} 超时`);
+            throw new Error(`上传文件 ${file.name} 超时，请稍后重试`);
+          }
+          throw error;
+        }
       }
       
-      // Invalidate documents query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      // Invalidate documents query to refresh the list - 修改查询路径
+      try {
+        const backendUrl = window.location.hostname === 'localhost' ? 
+          'http://127.0.0.1:8000/api/vector_store_size/' : '/api/vector_store_size/';
+          
+        console.log(`刷新文档列表: ${backendUrl}`);
+        
+        // 直接获取而不是invalidate
+        const response = await fetch(backendUrl, {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("获取到知识库大小数据:", data);
+        }
+      } catch (error) {
+        console.error("获取知识库大小失败:", error);
+      }
       
       // Reset state
       setSelectedFiles(null);
@@ -111,8 +161,15 @@ export default function FileUploader() {
         variant: "destructive"
       });
     } finally {
+      console.log("上传过程结束");
       setIsUploading(false);
     }
+  };
+
+  // 新增处理文件选择的函数
+  const handleSelectFile = (e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止事件冒泡
+    inputRef.current?.click();
   };
   
   return (
@@ -127,14 +184,14 @@ export default function FileUploader() {
         onDragOver={handleDrag}
         onDragLeave={handleDrag}
         onDrop={handleDrop}
-        onClick={() => inputRef.current?.click()}
+        onClick={handleSelectFile}
       >
         <input 
           ref={inputRef}
           type="file" 
           multiple 
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-          accept=".pdf,.docx,.doc"
+          className="hidden" // 将绝对定位改为隐藏
+          accept=".pdf,.docx,.doc,.txt"
           onChange={(e) => handleFileChange(e.target.files)}
         />
         <div className="text-center">
@@ -151,7 +208,7 @@ export default function FileUploader() {
             <>
               <Upload className="h-10 w-10 text-neutral-400 mx-auto mb-2" />
               <p className="text-sm font-medium text-neutral-600 mb-1">将文件拖放到此处或点击浏览</p>
-              <p className="text-xs text-neutral-500">支持格式: PDF, DOCX</p>
+              <p className="text-xs text-neutral-500">支持格式: PDF, DOCX, TXT</p>
             </>
           )}
         </div>

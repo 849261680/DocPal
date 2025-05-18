@@ -1,5 +1,11 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// 获取API基础URL，开发环境指向后端直接地址
+export const getApiBaseUrl = () => {
+  return window.location.hostname === 'localhost' ? 
+    'http://127.0.0.1:8000' : '';
+};
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -12,7 +18,11 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  // 如果URL不是以http开头，则添加API基础URL
+  const fullUrl = url.startsWith('http') ? url : `${getApiBaseUrl()}${url}`;
+  console.log(`发送请求到: ${fullUrl}`);
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -29,7 +39,12 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    const requestUrl = queryKey[0] as string;
+    // 如果URL不是以http开头，则添加API基础URL
+    const fullUrl = requestUrl.startsWith('http') ? requestUrl : `${getApiBaseUrl()}${requestUrl}`;
+    console.log(`查询请求: ${fullUrl}`);
+    
+    const res = await fetch(fullUrl, {
       credentials: "include",
     });
 

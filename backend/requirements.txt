@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+langchain
+sentence-transformers
+faiss-cpu
+python-dotenv
+python-multipart
+httpx
+PyMuPDF
+docx2txt
+torch
+langchain-core
+uuid
+typing_extensions
+pydantic 

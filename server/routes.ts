@@ -54,6 +54,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      // Log the original filename as received by multer
+      console.log(`[SERVER LOG] Original filename from multer: ${file.originalname}`);
+
+      // Attempt to correct filename encoding (UTF-8 misinterpreted as Latin-1)
+      const originalNameFromMulter = file.originalname;
+      try {
+        const originalBytes = Buffer.from(originalNameFromMulter, 'latin1');
+        const correctedName = originalBytes.toString('utf8');
+        if (originalNameFromMulter !== correctedName) {
+          console.log(`[SERVER LOG] Corrected filename encoding from "${originalNameFromMulter}" to "${correctedName}"`);
+          file.originalname = correctedName; // Update the filename in the request object
+        } else {
+          console.log(`[SERVER LOG] Filename "${originalNameFromMulter}" did not need encoding correction or was not Latin-1 misinterpretation.`);
+        }
+      } catch (e) {
+        console.error('[SERVER LOG] Error during filename encoding correction:', e);
+        // Decide if we want to proceed with originalNameFromMulter or handle error
+      }
+
       // Create document record
       const document = await storage.createDocument({
         filename: file.originalname,

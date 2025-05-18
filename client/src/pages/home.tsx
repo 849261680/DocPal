@@ -16,21 +16,20 @@ export default function Home() {
     <div className="h-screen flex flex-col overflow-hidden bg-neutral-50">
       {/* Header */}
       <header className="bg-white border-b border-neutral-200 px-4 py-3 shadow-sm">
-        <div className="container mx-auto flex justify-between items-center">
+        <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
             <BrainCog className="text-primary h-6 w-6" />
             <h1 className="text-xl font-semibold text-neutral-800">RAG 企业知识库问答系统</h1>
           </div>
-          <div className="flex items-center gap-2 md:gap-4">
-            <button className="px-3 py-1.5 text-neutral-600 text-sm font-medium hover:bg-neutral-100 rounded-md transition">
-              帮助
-            </button>
-            <button 
-              className="px-3 py-1.5 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary/90 transition shadow-sm"
-              onClick={() => setProcessingModalOpen(hasProcessingDocs)}
+          <div className="mr-14">
+            <a 
+              href="https://psx1.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-base font-medium text-neutral-600 hover:text-primary transition-colors"
             >
-              设置
-            </button>
+              关于我
+            </a>
           </div>
         </div>
       </header>

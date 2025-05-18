@@ -1,6 +1,54 @@
-node_modules
-dist
+# Node.js and frontend
+node_modules/
+dist/
 .DS_Store
-server/public
-vite.config.ts.*
+# vite.config.ts.* # It seems this was to ignore temp files from vite, might not be needed if specific
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# IDE specific files
+.idea/
+.vscode/
+*.suo
+*.ntvs*.*
+*.njsproj
+*.sln
+*.sw?
+.cursor/
+
+# Environment files
+.env
+.env.*
+!/.env.example # Allow .env.example
+
+# Data and Index (Optional - uncomment if you don\'t want to commit these)
+# index/faiss_store.index
+# index/faiss_store.meta.pkl
+# data/uploaded_files/
+
+# Other
 *.tar.gz
+# server/public # This was in the original, keep if `server/` dir is kept and has a public dir

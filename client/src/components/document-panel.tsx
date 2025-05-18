@@ -7,17 +7,18 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
+import { getApiBaseUrl } from "@/lib/queryClient";
 
 export default function DocumentPanel() {
   const { toast } = useToast();
-  const { documents, isLoading, refetch } = useDocuments();
+  const { documents, isLoading, refetch, totalDocuments, lastUpdated } = useDocuments();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
 
   const refreshIndex = async () => {
     try {
       setIsRefreshing(true);
-      await apiRequest("POST", "/api/documents/refresh", {});
+      await apiRequest("POST", "/api/reset_vector_store", {});
       await refetch();
       toast({
         title: "索引已刷新",
@@ -41,8 +42,9 @@ export default function DocumentPanel() {
 
     try {
       setIsClearing(true);
-      await apiRequest("DELETE", "/api/documents", {});
-      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      await apiRequest("DELETE", "/api/reset_vector_store", {});
+      queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/vector_store_size`] });
+      queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/documents`] });
       toast({
         title: "知识库已清空",
         description: "所有文档已从知识库中移除。"
@@ -58,31 +60,6 @@ export default function DocumentPanel() {
     }
   };
 
-  const countChunks = () => {
-    return documents.reduce((sum, doc) => sum + (doc.chunkCount || 0), 0);
-  };
-
-  const getLastUpdated = () => {
-    if (documents.length === 0) return "从未";
-    
-    const mostRecent = new Date(Math.max(...documents.map(d => new Date(d.uploadedAt).getTime())));
-    const now = new Date();
-    const diffMs = now.getTime() - mostRecent.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 1) return "刚刚";
-    if (diffMins === 1) return "1分钟前";
-    if (diffMins < 60) return `${diffMins}分钟前`;
-    
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours === 1) return "1小时前";
-    if (diffHours < 24) return `${diffHours}小时前`;
-    
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays === 1) return "1天前";
-    return `${diffDays}天前`;
-  };
-
   return (
     <aside className="bg-white border-r border-neutral-200 w-full md:w-96 flex flex-col h-full overflow-hidden transition-all duration-300">
       <div className="border-b border-neutral-200 px-4 py-3">
@@ -93,7 +70,7 @@ export default function DocumentPanel() {
       <div className="px-4 py-5 border-b border-neutral-200">
         <div className="mb-4">
           <h3 className="text-sm font-medium text-neutral-700 mb-1">上传文档</h3>
-          <p className="text-xs text-neutral-500">上传PDF或DOCX文件以构建您的知识库</p>
+          <p className="text-xs text-neutral-500">上传PDF、DOCX或TXT文件以构建您的知识库</p>
         </div>
         
         <FileUploader />
@@ -102,7 +79,7 @@ export default function DocumentPanel() {
       {/* Document list */}
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-3 flex justify-between items-center border-b border-neutral-200 bg-neutral-50">
-          <h3 className="text-sm font-medium text-neutral-700">已上传文档</h3>
+          <h3 className="text-sm font-medium text-neutral-700">知识库管理</h3>
           <div className="flex gap-2">
             <Button
               variant="ghost"
@@ -110,7 +87,7 @@ export default function DocumentPanel() {
               className="h-8 w-8"
               title="刷新索引"
               onClick={refreshIndex}
-              disabled={isRefreshing || documents.length === 0}
+              disabled={isRefreshing}
             >
               {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
@@ -120,30 +97,33 @@ export default function DocumentPanel() {
               className="h-8 w-8"
               title="清空知识库"
               onClick={clearKnowledgeBase}
-              disabled={isClearing || documents.length === 0}
+              disabled={isClearing || totalDocuments === 0}
             >
               {isClearing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             </Button>
           </div>
         </div>
         
-        <DocumentList documents={documents} isLoading={isLoading} />
-      </div>
-      
-      {/* Knowledge base stats */}
-      <div className="border-t border-neutral-200 bg-neutral-50 px-4 py-3">
-        <div className="flex items-center justify-between text-xs text-neutral-600">
-          <div className="flex items-center gap-3">
-            <div>
-              <span className="font-medium">{documents.length}</span> 文档
-            </div>
-            <div>
-              <span className="font-medium">{countChunks()}</span> 文本块
-            </div>
-          </div>
-          <span className="text-xs text-neutral-500">最后更新: {getLastUpdated()}</span>
+        {/* 文档列表 */}
+        <div className="px-4 pt-4 pb-4">
+          <h4 className="text-sm font-medium text-neutral-700 mb-3">已上传文档</h4>
+          {documents.length === 0 && !isLoading && (
+            <p className="text-xs text-neutral-500 text-center py-8">
+              暂无文档，请上传文件以构建知识库
+            </p>
+          )}
+          <DocumentList documents={documents} isLoading={isLoading} />
         </div>
       </div>
+      
+      {/* 最后更新时间信息 */}
+      {lastUpdated && (
+        <div className="border-t border-neutral-200 bg-neutral-50 px-4 py-2">
+          <div className="flex justify-end">
+            <span className="text-xs text-neutral-500">最后更新: {lastUpdated}</span>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

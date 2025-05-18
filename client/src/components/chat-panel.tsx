@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import ChatMessage from "@/components/chat-message";
-import { Layers, Trash2 } from "lucide-react";
+import { Layers, Trash2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useChat } from "@/hooks/use-chat";
 
@@ -49,6 +49,21 @@ export default function ChatPanel() {
     
     if (confirm("确定要清空聊天记录吗？")) {
       await clearChat();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Prevent newline
+      // Create a synthetic event or call handleSubmit directly if it doesn't rely on event details
+      // For simplicity, if handleSubmit doesn't strictly need the form event, we can call it.
+      // However, to be more robust, we might need to trigger form submission.
+      // Let's try calling handleSubmit directly, assuming it's safe.
+      
+      // We need to ensure handleSubmit has access to the current input
+      // Since handleSubmit already uses the `input` state, this should be fine.
+      const mockEvent = { preventDefault: () => {} } as React.FormEvent;
+      handleSubmit(mockEvent); // Call handleSubmit with a mock event or refactor handleSubmit
     }
   };
 
@@ -106,23 +121,24 @@ export default function ChatPanel() {
       {/* Input area */}
       <div className="border-t border-neutral-200 bg-white px-4 py-3">
         <div className="max-w-2xl mx-auto">
-          <form className="relative" onSubmit={handleSubmit}>
-            <textarea 
+          <form className="flex items-center" onSubmit={handleSubmit}>
+            <textarea
               ref={textareaRef}
               rows={1}
-              className="w-full rounded-lg border border-neutral-300 focus:border-primary focus:ring-2 focus:ring-primary/20 px-4 py-3 pr-14 text-neutral-800 placeholder-neutral-400 text-sm resize-none"
+              className="flex-grow rounded-lg border border-neutral-300 focus:border-primary focus:ring-2 focus:ring-primary/20 px-4 py-3 text-neutral-800 placeholder-neutral-400 text-sm resize-none"
               placeholder="询问关于您文档的问题..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={isLoading}
+              onKeyDown={handleKeyDown}
             ></textarea>
-            <Button 
+            <Button
               type="submit"
               size="icon"
-              className="absolute right-2 bottom-2.5"
+              className="ml-2 shrink-0"
               disabled={isLoading || !input.trim()}
             >
-              <Layers className="h-4 w-4" />
+              <Send className="h-4 w-4" />
             </Button>
           </form>
           

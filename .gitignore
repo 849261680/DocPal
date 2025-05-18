@@ -17,7 +17,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/  # 仅忽略根目录下的lib目录
 lib64/
 parts/
 sdist/

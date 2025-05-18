@@ -1,7 +1,15 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// 获取API基础URL，开发环境指向后端直接地址
+// 获取API基础URL，优先使用环境变量，否则在开发环境指向本地后端
 export const getApiBaseUrl = () => {
+  // 优先使用环境变量中的API基础URL
+  const envApiUrl = import.meta.env.VITE_API_BASE_URL;
+  
+  if (envApiUrl) {
+    return envApiUrl;
+  }
+  
+  // 如果没有环境变量，则在本地开发时使用默认值
   return window.location.hostname === 'localhost' ? 
     'http://127.0.0.1:8000' : '';
 };

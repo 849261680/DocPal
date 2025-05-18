@@ -1,15 +1,13 @@
 fastapi
 uvicorn
-langchain
-sentence-transformers
+langchain-core
+sentence-transformers>=2.2.2
 faiss-cpu
 python-dotenv
 python-multipart
 httpx
-PyMuPDF
+PyMuPDF==1.22.5
 docx2txt
-torch --index-url https://download.pytorch.org/whl/cpu
-langchain-core
-uuid
+torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu
 typing_extensions
 pydantic 

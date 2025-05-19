@@ -6,7 +6,8 @@ export const getApiBaseUrl = () => {
   const envApiUrl = import.meta.env.VITE_API_BASE_URL;
   
   if (envApiUrl) {
-    return envApiUrl;
+    // 确保URL不以斜杠结尾
+    return envApiUrl.endsWith('/') ? envApiUrl.slice(0, -1) : envApiUrl;
   }
   
   // 如果没有环境变量，则在本地开发时使用默认值

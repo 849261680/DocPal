@@ -49,35 +49,35 @@ export interface DocumentListResponse {
 export const api = {
   // Document endpoints
   async getVectorStoreSize(): Promise<VectorStoreSize> {
-    const response = await apiRequest("GET", "/api/vector_store_size", undefined);
+    const response = await apiRequest("GET", "vector_store_size", undefined);
     return response.json();
   },
   
   async getDocuments(): Promise<DocumentListResponse> {
-    const response = await apiRequest("GET", "/api/documents", undefined);
+    const response = await apiRequest("GET", "documents", undefined);
     return response.json();
   },
   
   async deleteDocument(id: number): Promise<void> {
-    await apiRequest("DELETE", `/api/documents/${id}`, undefined);
+    await apiRequest("DELETE", `documents/${id}`, undefined);
   },
   
   async refreshIndex(): Promise<void> {
-    await apiRequest("POST", "/api/reset_vector_store", {});
+    await apiRequest("POST", "reset_vector_store", {});
   },
   
   async clearKnowledgeBase(): Promise<void> {
-    await apiRequest("DELETE", "/api/reset_vector_store", undefined);
+    await apiRequest("DELETE", "reset_vector_store", undefined);
   },
   
   // Message endpoints
   async getMessages(): Promise<Message[]> {
-    const response = await apiRequest("GET", "/api/messages", undefined);
+    const response = await apiRequest("GET", "messages", undefined);
     return response.json();
   },
   
   async sendMessage(content: string): Promise<SendMessageResponse> {
-    const response = await apiRequest("POST", "/api/query", { query: content });
+    const response = await apiRequest("POST", "query", { query: content });
     const data = await response.json();
     
     // 创建并返回格式化的用户消息和助手消息
@@ -108,6 +108,6 @@ export const api = {
   },
   
   async clearMessages(): Promise<void> {
-    await apiRequest("DELETE", "/api/messages", undefined);
+    await apiRequest("DELETE", "messages", undefined);
   }
 };

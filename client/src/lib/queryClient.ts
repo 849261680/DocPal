@@ -51,30 +51,7 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const requestUrl = queryKey[0] as string; // 这个requestUrl应该是类似 '/api/vector_store_size' 这样的相对路径
-    const baseUrl = getApiBaseUrl();
-
-    // 检查requestUrl是否已经是完整的URL或者是否以/api/开头
-    // 同时处理baseUrl为空的情况（比如Vercel环境变量未设置或在非localhost环境且未设置VITE_API_BASE_URL）
-    let fullUrl;
-    if (requestUrl.startsWith('http')) {
-        fullUrl = requestUrl;
-    } else if (baseUrl) {
-        // 如果baseUrl存在，则拼接。移除requestUrl可能存在的前导/，确保baseUrl和路径之间只有一个/
-        fullUrl = `${baseUrl}${requestUrl.startsWith('/') ? requestUrl : '/' + requestUrl}`;
-    } else {
-        // 如果baseUrl为空（例如，在Vercel上，VITE_API_BASE_URL未设置），
-        // 并且requestUrl不是完整的URL，则假定它是相对于当前域的路径。
-        // 但我们的目标是调用后端，所以这里应该已经是完整URL或至少包含/api/
-        // 鉴于之前的日志，queryKey[0]已经是 'https://.../api/api/...' 或 '/api/api/...'
-        // 我们需要的是 VITE_API_BASE_URL + /api/endpoint
-        // 如果VITE_API_BASE_URL是 'https://abc.com'， queryKey是 'vector_store_size'
-        // 那么fullUrl应该是 'https://abc.com/api/vector_store_size'
-        // 这部分逻辑已移到apiRequest，queryKey应该已经是正确的完整路径或只包含endpoint
-        // 这里假设queryKey[0]已经是完整的路径或者仅是endpoint
-        // 我们在这里的目标是确保baseUrl和endpoint正确组合
-        fullUrl = `${baseUrl}/api/${requestUrl.replace(/^\/api\//, '').replace(/^\//, '')}`;
-    }
+    const fullUrl = queryKey[0] as string; // queryKey[0] 已经是完整的 URL
 
     console.log(`查询请求: ${fullUrl}`);
     

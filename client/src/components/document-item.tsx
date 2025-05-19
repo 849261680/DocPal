@@ -106,13 +106,13 @@ export default function DocumentItem({ document }: DocumentItemProps) {
             )}
           </div>
           <div className="flex items-center gap-3 mt-0.5">
-            <span className="text-xs text-neutral-400">{formatDate(document.uploadedAt)}</span>
+            <span className="text-xs text-neutral-400">{formatDate(document.uploadedAt.toString())}</span>
           </div>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 opacity-0 group-hover:opacity-100"
+          className="h-8 w-8"
           onClick={handleDelete}
           disabled={isDeleting}
           title="删除文档"

@@ -11,8 +11,7 @@ export function useDocuments() {
     isError: isErrorVectorSize,
     refetch: refetchVectorSize
   } = useQuery({
-    queryKey: [`${getApiBaseUrl()}/api/vector_store_size`],
-    refetchInterval: 3000, // Poll every 3 seconds to update processing status
+    queryKey: [`${getApiBaseUrl()}/api/vector_store_size`]
   });
   
   // 获取文档列表
@@ -22,21 +21,20 @@ export function useDocuments() {
     isError: isErrorDocuments,
     refetch: refetchDocuments
   } = useQuery({
-    queryKey: [`${getApiBaseUrl()}/api/documents`],
-    refetchInterval: 3000, // Poll every 3 seconds
+    queryKey: [`${getApiBaseUrl()}/api/documents`]
   });
   
   // 将文档数据转换为Document类型数组
-  const documents: Document[] = documentData.documents.map((doc) => ({
-    id: 0, // 这里应该有一个真实的ID
+  const documents: Document[] = ((documentData as { documents: Array<{ filename: string; file_size: number; upload_time: string; chunks_count: number }> }).documents || []).map((doc) => ({
+    id: 0, // 这里应该有一个真实的ID，或者从后端获取
     filename: doc.filename,
     filesize: doc.file_size,
     filetype: doc.filename.split('.').pop() || '',
-    status: ProcessingStatus.COMPLETED,
-    progress: 100,
-    uploadedAt: doc.upload_time,
+    status: ProcessingStatus.COMPLETED, // 实际状态应由后端提供或在前端管理
+    progress: 100, // 实际进度应由后端提供或在前端管理
+    uploadedAt: new Date(doc.upload_time), // 将字符串转换为Date对象
     chunkCount: doc.chunks_count,
-    error: null
+    error: null // 实际错误信息应由后端提供
   }));
   
   // 正在处理的文档（这里实际上没有，所以返回空数组）
@@ -61,7 +59,7 @@ export function useDocuments() {
     isLoading: isLoadingVectorSize || isLoadingDocuments,
     isError: isErrorVectorSize || isErrorDocuments,
     refetch,
-    totalDocuments: vectorData.size || 0,
-    lastUpdated: documentData.last_updated
+    totalDocuments: (vectorData as { size: number }).size || 0,
+    lastUpdated: (documentData as { last_updated: string | null }).last_updated
   };
 }

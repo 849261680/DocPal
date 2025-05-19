@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, getApiBaseUrl } from "@/lib/queryClient";
 import { Upload, CheckCircle, Loader2 } from "lucide-react";
 
 export default function FileUploader() {
@@ -93,9 +93,8 @@ export default function FileUploader() {
         const timeoutId = setTimeout(() => controller.abort(), 120000); // 2分钟超时
         
         try {
-          // Upload file - 修改上传路径，并添加超时控制
-          const backendUrl = window.location.hostname === 'localhost' ? 
-            'http://127.0.0.1:8000/api/upload_doc/' : '/api/upload_doc/';
+          // 使用getApiBaseUrl函数获取后端URL
+          const backendUrl = `${getApiBaseUrl()}/api/upload_doc/`;
             
           console.log(`正在上传文件到: ${backendUrl}`);
           
@@ -127,8 +126,8 @@ export default function FileUploader() {
       
       // Invalidate documents query to refresh the list - 修改查询路径
       try {
-        const backendUrl = window.location.hostname === 'localhost' ? 
-          'http://127.0.0.1:8000/api/vector_store_size/' : '/api/vector_store_size/';
+        // 使用getApiBaseUrl函数获取后端URL
+        const backendUrl = `${getApiBaseUrl()}/api/vector_store_size`;
           
         console.log(`刷新文档列表: ${backendUrl}`);
         

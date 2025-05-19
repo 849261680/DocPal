@@ -23,14 +23,12 @@ export default function DocumentItem({ document }: DocumentItemProps) {
     
     try {
       setIsDeleting(true);
-      // 目前我们还没有实现文档删除API，但这里保留逻辑以备将来实现
-      // 临时替代方案：清空整个知识库
-      await apiRequest("DELETE", `/api/reset_vector_store`, {});
+      await apiRequest("DELETE", `/api/documents/${document.filename}`, {});
       queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/vector_store_size`] });
       queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/documents`] });
       toast({
-        title: "知识库已清空",
-        description: "所有文档已从知识库中删除。",
+        title: "文档已删除",
+        description: `文档 ${document.filename} 已从知识库中删除。`,
       });
     } catch (error) {
       toast({

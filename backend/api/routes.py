@@ -230,6 +230,45 @@ async def get_vector_store_size_route(db: FAISSVectorStore = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"获取向量数据库大小时发生错误: {str(e)}")
 
 # 新增：获取文档列表
+@router.delete("/documents/{filename}", response_model=dict)
+async def delete_document_route(filename: str, db: FAISSVectorStore = Depends(get_db)):
+    """
+    删除指定的文档，包括文件、元数据和向量存储中的数据
+    """
+    try:
+        # 1. 获取文档信息
+        documents = get_all_documents()
+        target_doc = next((doc for doc in documents if doc.filename == filename), None)
+        
+        if not target_doc:
+            raise HTTPException(status_code=404, detail=f"找不到文档: {filename}")
+            
+        # 2. 删除文件
+        if os.path.exists(target_doc.file_path):
+            os.remove(target_doc.file_path)
+            
+        # 3. 删除元数据
+        delete_document(filename)
+        
+        # 4. 重置向量存储（由于FAISS不支持删除单个文档，我们需要重建索引）
+        db.reset_index()
+        
+        # 5. 重新添加其他文档到向量存储
+        remaining_docs = [doc for doc in documents if doc.filename != filename]
+        for doc in remaining_docs:
+            if os.path.exists(doc.file_path):
+                docs = load_document(doc.file_path)
+                if docs:
+                    chunks = split_documents(docs)
+                    db.add_documents(chunks)
+        
+        return {"status": "success", "message": f"文档 {filename} 已成功删除"}
+        
+    except Exception as e:
+        print(f"删除文档时出错: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"删除文档时发生错误: {str(e)}")
+
 @router.get("/documents/", response_model=DocumentListResponse)
 async def get_documents_route():
     """
@@ -263,4 +302,4 @@ async def get_documents_route():
     except Exception as e:
         print(f"获取文档列表时出错: {e}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"获取文档列表时发生错误: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"获取文档列表时发生错误: {str(e)}")

@@ -23,7 +23,7 @@ export default function DocumentItem({ document }: DocumentItemProps) {
     
     try {
       setIsDeleting(true);
-      await apiRequest("DELETE", `documents/${document.filename}`, {});
+      await apiRequest("DELETE", `/api/documents/${document.filename}`, {});
       queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/vector_store_size`] });
       queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/documents`] });
       toast({

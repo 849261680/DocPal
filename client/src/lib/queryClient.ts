@@ -25,11 +25,16 @@ async function throwIfResNotOk(res: Response) {
 // 使用CORS代理服务，解决CORS问题
 const useCorsProxy = (url: string) => {
   // 只为render.com域名使用代理
-  if (url.includes('enterprise-knowledge-hub-backend.onrender.com')) {
-    // 使用cors-anywhere或类似服务
+  if (url.includes('enterprise-knowledge-hub-backend.onrender.com') || url.includes('render.com')) {
+    // 使用corsproxy.io服务
     return `https://corsproxy.io/?${encodeURIComponent(url)}`;
   }
   return url;
+};
+
+// 检查URL是否使用了代理
+const isProxiedUrl = (url: string) => {
+  return url.includes('corsproxy.io');
 };
 
 export async function apiRequest(
@@ -47,11 +52,14 @@ export async function apiRequest(
   const proxiedUrl = useCorsProxy(fullUrl);
   console.log(`发送请求到: ${fullUrl}`, proxiedUrl !== fullUrl ? `(通过代理: ${proxiedUrl})` : '');
   
+  // 如果使用代理，则不发送credentials
+  const useCredentials = !isProxiedUrl(proxiedUrl);
+  
   const res = await fetch(proxiedUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: useCredentials ? "include" : "omit", // 使用代理时不发送凭据
   });
 
   await throwIfResNotOk(res);
@@ -68,8 +76,11 @@ export const getQueryFn: <T>(options: {
 
     console.log(`查询请求: ${fullUrl}`);
     
+    // 检查是否是代理URL
+    const useCredentials = !isProxiedUrl(fullUrl);
+    
     const res = await fetch(fullUrl, {
-      credentials: "include",
+      credentials: useCredentials ? "include" : "omit", // 使用代理时不发送凭据
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

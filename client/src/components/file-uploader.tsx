@@ -8,11 +8,16 @@ import { Upload, CheckCircle, Loader2 } from "lucide-react";
 // 使用CORS代理服务，解决CORS问题
 const useCorsProxy = (url: string) => {
   // 只为render.com域名使用代理
-  if (url.includes('enterprise-knowledge-hub-backend.onrender.com')) {
-    // 使用cors-anywhere或类似服务
+  if (url.includes('enterprise-knowledge-hub-backend.onrender.com') || url.includes('render.com')) {
+    // 使用corsproxy.io服务
     return `https://corsproxy.io/?${encodeURIComponent(url)}`;
   }
   return url;
+};
+
+// 检查URL是否使用了代理
+const isProxiedUrl = (url: string) => {
+  return url.includes('corsproxy.io');
 };
 
 export default function FileUploader() {
@@ -110,10 +115,13 @@ export default function FileUploader() {
             
           console.log(`正在上传文件到: ${backendUrl}`, proxiedUrl !== backendUrl ? `(通过代理: ${proxiedUrl})` : '');
           
+          // 检查是否是代理URL
+          const useCredentials = !isProxiedUrl(proxiedUrl);
+          
           const response = await fetch(proxiedUrl, {
             method: "POST",
             body: formData,
-            credentials: 'include',
+            credentials: useCredentials ? 'include' : 'omit', // 使用代理时不发送凭据
             signal: controller.signal
           });
           

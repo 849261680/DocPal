@@ -6,8 +6,8 @@ import { getApiBaseUrl } from "@/lib/queryClient";
 // 使用CORS代理服务，解决CORS问题
 const useCorsProxy = (url: string) => {
   // 只为render.com域名使用代理
-  if (url.includes('enterprise-knowledge-hub-backend.onrender.com')) {
-    // 使用cors-anywhere或类似服务
+  if (url.includes('enterprise-knowledge-hub-backend.onrender.com') || url.includes('render.com')) {
+    // 使用corsproxy.io服务
     return `https://corsproxy.io/?${encodeURIComponent(url)}`;
   }
   return url;

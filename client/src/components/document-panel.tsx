@@ -107,11 +107,6 @@ export default function DocumentPanel() {
         {/* 文档列表 */}
         <div className="px-4 pt-4 pb-4">
           <h4 className="text-sm font-medium text-neutral-700 mb-3">已上传文档</h4>
-          {documents.length === 0 && !isLoading && (
-            <p className="text-xs text-neutral-500 text-center py-8">
-              暂无文档，请上传文件以构建知识库
-            </p>
-          )}
           <DocumentList documents={documents} isLoading={isLoading} />
         </div>
       </div>

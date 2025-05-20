@@ -5,6 +5,16 @@ import { apiRequest } from "@/lib/queryClient";
 import { queryClient, getApiBaseUrl } from "@/lib/queryClient";
 import { Upload, CheckCircle, Loader2 } from "lucide-react";
 
+// 使用CORS代理服务，解决CORS问题
+const useCorsProxy = (url: string) => {
+  // 只为render.com域名使用代理
+  if (url.includes('enterprise-knowledge-hub-backend.onrender.com')) {
+    // 使用cors-anywhere或类似服务
+    return `https://corsproxy.io/?${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
 export default function FileUploader() {
   const { toast } = useToast();
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
@@ -95,10 +105,12 @@ export default function FileUploader() {
         try {
           // 使用getApiBaseUrl函数获取后端URL
           const backendUrl = `${getApiBaseUrl()}/api/upload_doc/`;
+          // 使用CORS代理
+          const proxiedUrl = useCorsProxy(backendUrl);
             
-          console.log(`正在上传文件到: ${backendUrl}`);
+          console.log(`正在上传文件到: ${backendUrl}`, proxiedUrl !== backendUrl ? `(通过代理: ${proxiedUrl})` : '');
           
-          const response = await fetch(backendUrl, {
+          const response = await fetch(proxiedUrl, {
             method: "POST",
             body: formData,
             credentials: 'include',
@@ -126,11 +138,18 @@ export default function FileUploader() {
       
       // 刷新文档列表和向量库大小
       try {
-        queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/vector_store_size`] });
-        queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/documents`] });
+        const vectorSizeUrl = `${getApiBaseUrl()}/api/vector_store_size`;
+        const documentsUrl = `${getApiBaseUrl()}/api/documents`;
         
-        console.log(`刷新文档列表: ${getApiBaseUrl()}/api/vector_store_size`);
-        console.log(`刷新文档列表: ${getApiBaseUrl()}/api/documents`);
+        // 使用代理URL
+        const proxiedVectorSizeUrl = useCorsProxy(vectorSizeUrl);
+        const proxiedDocumentsUrl = useCorsProxy(documentsUrl);
+        
+        queryClient.invalidateQueries({ queryKey: [proxiedVectorSizeUrl] });
+        queryClient.invalidateQueries({ queryKey: [proxiedDocumentsUrl] });
+        
+        console.log(`刷新文档列表: ${vectorSizeUrl}`, proxiedVectorSizeUrl !== vectorSizeUrl ? `(通过代理: ${proxiedVectorSizeUrl})` : '');
+        console.log(`刷新文档列表: ${documentsUrl}`, proxiedDocumentsUrl !== documentsUrl ? `(通过代理: ${proxiedDocumentsUrl})` : '');
       } catch (error) {
         console.error("刷新文档列表失败:", error);
       }

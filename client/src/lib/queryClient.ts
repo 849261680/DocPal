@@ -22,6 +22,16 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// 使用CORS代理服务，解决CORS问题
+const useCorsProxy = (url: string) => {
+  // 只为render.com域名使用代理
+  if (url.includes('enterprise-knowledge-hub-backend.onrender.com')) {
+    // 使用cors-anywhere或类似服务
+    return `https://corsproxy.io/?${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
 export async function apiRequest(
   method: string,
   url: string, // 这个url应该是类似 'vector_store_size' 或 'documents' 这样的相对路径
@@ -32,9 +42,12 @@ export async function apiRequest(
   const fullUrl = url.startsWith('http') 
     ? url 
     : `${baseUrl}/api/${url.startsWith('/') ? url.substring(1) : url}`;
-  console.log(`发送请求到: ${fullUrl}`);
   
-  const res = await fetch(fullUrl, {
+  // 使用CORS代理
+  const proxiedUrl = useCorsProxy(fullUrl);
+  console.log(`发送请求到: ${fullUrl}`, proxiedUrl !== fullUrl ? `(通过代理: ${proxiedUrl})` : '');
+  
+  const res = await fetch(proxiedUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,

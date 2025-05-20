@@ -35,6 +35,17 @@ from backend.services.document_storage import (
 
 router = APIRouter()
 
+# 添加专门处理OPTIONS请求的端点，确保CORS预检请求得到正确响应
+@router.options("/{path:path}")
+async def options_route(path: str):
+    """
+    处理所有OPTIONS请求，确保CORS预检请求得到正确响应
+    """
+    return JSONResponse(
+        content={"message": "CORS预检请求成功"},
+        status_code=200
+    )
+
 # Dependency to get the vector store instance
 def get_db() -> FAISSVectorStore:
     return get_vector_store()

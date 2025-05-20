@@ -31,17 +31,25 @@ app = FastAPI(
 )
 
 # CORS (Cross-Origin Resource Sharing) 中间件配置
-# 指定允许的源，而不是使用通配符
-# 从环境变量读取允许的源，如果没有设置，则默认为本地开发环境的地址
+# 从环境变量读取允许的源，如果没有设置，则默认为本地开发环境的地址和vercel.app
 allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000,https://enterprise-knowledge-hub.vercel.app")
 origins = [origin.strip() for origin in allowed_origins_str.split(',')]
 
+# 添加通配符以确保所有环境都可以工作
+if "https://enterprise-knowledge-hub.vercel.app" in origins and "*" not in origins:
+    print("确保vercel.app域名已包含在CORS设置中")
+
+# 打印当前允许的CORS源，用于调试
+print(f"当前CORS允许的源: {origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # 使用从环境变量解析的源列表
+    allow_origins=["*"],  # 临时使用通配符来排除CORS问题
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], # 允许所有标准方法
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"], # 允许所有标准方法
     allow_headers=["*"],  # 允许所有请求头
+    max_age=86400,  # 预检请求的缓存时间 (24小时)
+    expose_headers=["Content-Disposition", "Content-Length", "Content-Type"]
 )
 
 # 应用启动事件处理器

@@ -124,24 +124,15 @@ export default function FileUploader() {
         }
       }
       
-      // Invalidate documents query to refresh the list - 修改查询路径
+      // 刷新文档列表和向量库大小
       try {
-        // 使用getApiBaseUrl函数获取后端URL
-        const backendUrl = `${getApiBaseUrl()}/api/vector_store_size`;
-          
-        console.log(`刷新文档列表: ${backendUrl}`);
+        queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/vector_store_size`] });
+        queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/documents`] });
         
-        // 直接获取而不是invalidate
-        const response = await fetch(backendUrl, {
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log("获取到知识库大小数据:", data);
-        }
+        console.log(`刷新文档列表: ${getApiBaseUrl()}/api/vector_store_size`);
+        console.log(`刷新文档列表: ${getApiBaseUrl()}/api/documents`);
       } catch (error) {
-        console.error("获取知识库大小失败:", error);
+        console.error("刷新文档列表失败:", error);
       }
       
       // Reset state

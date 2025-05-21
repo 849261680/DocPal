@@ -11,12 +11,15 @@ if os.path.exists(dotenv_path):
 else:
     print(f"[Config] .env file not found at: {dotenv_path}. Using default configurations or environment variables.")
 
-# DeepSeek API 配置
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-# 修正DeepSeek API的URL
-# DeepSeek的API基础URL不包含具体端点，并且不带结尾的斜杠
-DEEPSEEK_API_BASE_URL = os.getenv("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com")
-CHAT_MODEL = os.getenv("CHAT_MODEL", "deepseek-chat")
+# DeepSeek API 配置 (不再使用)
+# DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+# DEEPSEEK_API_BASE_URL = os.getenv("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com")
+# CHAT_MODEL = os.getenv("CHAT_MODEL", "deepseek-chat")
+
+# Cohere API 配置
+COHERE_API_KEY = os.getenv("COHERE_API_KEY")
+COHERE_API_BASE_URL = os.getenv("COHERE_API_BASE_URL", "https://api.cohere.ai")
+COHERE_EMBEDDING_MODEL = os.getenv("COHERE_EMBEDDING_MODEL", "embed-multilingual-v3.0")  # 多语言模型支持中文
 
 # 向量数据库配置
 VECTOR_DB_PATH = os.getenv("VECTOR_DB_PATH", "./index/faiss_store")
@@ -54,8 +57,8 @@ CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
 TOP_K_RESULTS = int(os.getenv("TOP_K_RESULTS", "3"))
 
 # 检查关键配置是否存在
-if not DEEPSEEK_API_KEY:
-    raise ValueError("DEEPSEEK_API_KEY 未在环境变量中设置。请在 .env 文件中配置。")
+if not COHERE_API_KEY:
+    raise ValueError("COHERE_API_KEY 未在环境变量中设置。请在 .env 文件中配置。")
 
-if not DEEPSEEK_API_BASE_URL:
-    raise ValueError("DEEPSEEK_API_BASE_URL 未在环境变量中设置。请在 .env 文件中配置。") 
+if not COHERE_API_BASE_URL:
+    raise ValueError("COHERE_API_BASE_URL 未在环境变量中设置。请在 .env 文件中配置。") 

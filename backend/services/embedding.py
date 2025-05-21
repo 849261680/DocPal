@@ -46,7 +46,7 @@ class DeepSeekEmbeddingSingleton:
                 print(f"[DeepSeekEmbeddingSingleton] DeepSeek HTTP客户端初始化完成")
                 
                 # 更新模型名称和维度
-                self._model_name = os.environ.get("DEEPSEEK_EMBEDDING_MODEL", "text-embedding-v1")
+                self._model_name = os.environ.get("DEEPSEEK_EMBEDDING_MODEL", "deepseek-embed")  # 使用正确的DeepSeek模型名称
                 self._dimension = int(os.environ.get("DEEPSEEK_EMBEDDING_DIMENSION", 1024))
                 
             except Exception as e:

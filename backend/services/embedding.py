@@ -3,65 +3,64 @@ import os
 import traceback
 import numpy as np
 import time
+import httpx
+import json
 
-# 导入OpenAI库
-from openai import OpenAI
-import tiktoken
+# DeepSeek配置常量
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+DEEPSEEK_API_BASE_URL = os.environ.get("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com")
+EMBEDDING_MODEL_NAME = os.environ.get("DEEPSEEK_EMBEDDING_MODEL", "text-embedding-v1")  # DeepSeek的embedding模型
+EMBEDDING_DIMENSION = int(os.environ.get("DEEPSEEK_EMBEDDING_DIMENSION", 1024))  # DeepSeek embedding的默认维度
+EMBEDDING_BATCH_SIZE = int(os.environ.get("DEEPSEEK_EMBEDDING_BATCH_SIZE", 4))  # 每批处理的文本数量
+EMBEDDING_REQUEST_TIMEOUT = int(os.environ.get("DEEPSEEK_REQUEST_TIMEOUT", 60))  # 请求超时时间
+EMBEDDING_MAX_RETRIES = int(os.environ.get("DEEPSEEK_MAX_RETRIES", 3))  # 最大重试次数
 
-# OpenAI配置常量
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-EMBEDDING_MODEL_NAME = os.environ.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
-EMBEDDING_DIMENSION = os.environ.get("OPENAI_EMBEDDING_DIMENSION", 1536)  # text-embedding-3-small的维度
-EMBEDDING_BATCH_SIZE = int(os.environ.get("OPENAI_EMBEDDING_BATCH_SIZE", 4))  # 每批处理的文本数量
-EMBEDDING_REQUEST_TIMEOUT = int(os.environ.get("OPENAI_REQUEST_TIMEOUT", 60))  # 请求超时时间
-EMBEDDING_MAX_RETRIES = int(os.environ.get("OPENAI_MAX_RETRIES", 3))  # 最大重试次数
+print(f"[服务初始化] 使用DeepSeek Embedding API: {EMBEDDING_MODEL_NAME}, 维度: {EMBEDDING_DIMENSION}")
+if not DEEPSEEK_API_KEY:
+    print("警告: 未设置DEEPSEEK_API_KEY环境变量。请确保在生产环境中设置此变量。")
 
-print(f"[服务初始化] 使用OpenAI Embedding API: {EMBEDDING_MODEL_NAME}, 维度: {EMBEDDING_DIMENSION}")
-if not OPENAI_API_KEY:
-    print("警告: 未设置OPENAI_API_KEY环境变量。请确保在生产环境中设置此变量。")
-
-class OpenAIEmbeddingSingleton:
-    """OpenAI Embedding API封装类，实现单例模式"""
+class DeepSeekEmbeddingSingleton:
+    """DeepSeek Embedding API封装类，实现单例模式"""
     _instance = None
-    _client: Optional[OpenAI] = None
+    _http_client: Optional[httpx.Client] = None
     _dimension: int = int(EMBEDDING_DIMENSION)
     _model_name: str = EMBEDDING_MODEL_NAME
     
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(OpenAIEmbeddingSingleton, cls).__new__(cls)
-            print("[OpenAIEmbeddingSingleton.__new__] 实例已创建，客户端将在首次使用时初始化")
+            cls._instance = super(DeepSeekEmbeddingSingleton, cls).__new__(cls)
+            print("[DeepSeekEmbeddingSingleton.__new__] 实例已创建，客户端将在首次使用时初始化")
         return cls._instance
     
     def _init_client_if_needed(self):
-        """初始化OpenAI客户端（如果尚未初始化）"""
-        if self._client is None:
+        """初始化DeepSeek HTTP客户端（如果尚未初始化）"""
+        if self._http_client is None:
             try:
                 # 检查API密钥
-                if not OPENAI_API_KEY:
-                    raise ValueError("未设置OPENAI_API_KEY环境变量")
+                if not DEEPSEEK_API_KEY:
+                    raise ValueError("未设置DEEPSEEK_API_KEY环境变量")
                     
-                # 初始化客户端
-                print(f"[OpenAIEmbeddingSingleton] 正在初始化OpenAI客户端...")
-                self._client = OpenAI(api_key=OPENAI_API_KEY, timeout=EMBEDDING_REQUEST_TIMEOUT)
-                print(f"[OpenAIEmbeddingSingleton] OpenAI客户端初始化完成")
+                # 初始化HTTP客户端
+                print(f"[DeepSeekEmbeddingSingleton] 正在初始化DeepSeek HTTP客户端...")
+                self._http_client = httpx.Client(timeout=EMBEDDING_REQUEST_TIMEOUT)
+                print(f"[DeepSeekEmbeddingSingleton] DeepSeek HTTP客户端初始化完成")
                 
                 # 更新模型名称和维度
-                self._model_name = os.environ.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
-                self._dimension = int(os.environ.get("OPENAI_EMBEDDING_DIMENSION", 1536))
+                self._model_name = os.environ.get("DEEPSEEK_EMBEDDING_MODEL", "text-embedding-v1")
+                self._dimension = int(os.environ.get("DEEPSEEK_EMBEDDING_DIMENSION", 1024))
                 
             except Exception as e:
-                print(f"[OpenAIEmbeddingSingleton] OpenAI客户端初始化失败: {e}")
+                print(f"[DeepSeekEmbeddingSingleton] DeepSeek客户端初始化失败: {e}")
                 traceback.print_exc()
-                self._client = None
-                raise RuntimeError(f"无法初始化OpenAI客户端: {e}")
+                self._http_client = None
+                raise RuntimeError(f"无法初始化DeepSeek客户端: {e}")
     
-    def get_client(self) -> OpenAI:
-        """获取OpenAI客户端实例"""
+    def get_client(self) -> httpx.Client:
+        """获取DeepSeek HTTP客户端实例"""
         self._init_client_if_needed()
-        if self._client is None:
-            raise RuntimeError("OpenAI客户端未能成功初始化")
-        return self._client
+        if self._http_client is None:
+            raise RuntimeError("DeepSeek HTTP客户端未能成功初始化")
+        return self._http_client
     
     def get_dimension(self) -> int:
         """获取嵌入向量的维度"""
@@ -75,28 +74,38 @@ class OpenAIEmbeddingSingleton:
         self._init_client_if_needed()
         
         try:
-            response = self._client.embeddings.create(
-                model=self._model_name,
-                input=texts,
-                encoding_format="float"
-            )
+            # 准备DeepSeek API请求
+            url = f"{DEEPSEEK_API_BASE_URL}/v1/embeddings"
+            headers = {
+                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": self._model_name,
+                "input": texts
+            }
+            
+            # 发送请求
+            response = self._http_client.post(url, headers=headers, json=payload)
+            response.raise_for_status()  # 检查HTTP响应状态
+            response_data = response.json()
             
             # 从响应中提取嵌入向量
-            embeddings = [item.embedding for item in response.data]
+            embeddings = [item.get("embedding", []) for item in response_data.get("data", [])]            
             return embeddings
             
         except Exception as e:
-            print(f"[OpenAIEmbeddingSingleton] 生成嵌入向量失败: {e}")
+            print(f"[DeepSeekEmbeddingSingleton] 生成嵌入向量失败: {e}")
             traceback.print_exc()
             raise e
 
-def get_embedding_model() -> OpenAIEmbeddingSingleton:
-    """获取OpenAI Embedding模型单例实例"""
-    return OpenAIEmbeddingSingleton()
+def get_embedding_model() -> DeepSeekEmbeddingSingleton:
+    """获取DeepSeek Embedding模型单例实例"""
+    return DeepSeekEmbeddingSingleton()
 
 def get_embedding_dimension() -> int:
     """获取嵌入向量的维度"""
-    return OpenAIEmbeddingSingleton().get_dimension()
+    return DeepSeekEmbeddingSingleton().get_dimension()
 
 def generate_embeddings(texts: List[str]) -> List[List[float]]:
     """
@@ -112,7 +121,7 @@ def generate_embeddings(texts: List[str]) -> List[List[float]]:
     max_retries = EMBEDDING_MAX_RETRIES
     all_embeddings = []
     
-    print(f"使用OpenAI {EMBEDDING_MODEL_NAME} 为 {len(texts)} 个文本块生成嵌入向量，批处理大小: {batch_size}")
+    print(f"使用DeepSeek {EMBEDDING_MODEL_NAME} 为 {len(texts)} 个文本块生成嵌入向量，批处理大小: {batch_size}")
     
     # 将文本分批处理
     for i in range(0, len(texts), batch_size):

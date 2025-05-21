@@ -6,14 +6,15 @@ faiss-cpu
 numpy~=1.26.4
 python-dotenv
 python-multipart
-httpx
+# 确保 httpx版本兼容DeepSeek API
+httpx>=0.25.0
 PyMuPDF==1.22.5
 docx2txt
 typing_extensions
 pydantic
-# 添加OpenAI依赖替代sentence-transformers
-openai>=1.6.0
-tiktoken>=0.5.1
+# 移除OpenAI相关依赖
+# openai>=1.6.0
+# tiktoken>=0.5.1
 # 保留以下依赖作为备选方案
 # sentence-transformers>=2.2.2
 # torch==2.2.1 --index-url https://download.pytorch.org/whl/cpu

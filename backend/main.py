@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import sys
+from datetime import datetime  # 新增: 用于健康检查端点返回当前时间
 
 # 将项目根目录添加到Python路径
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -88,6 +89,17 @@ async def shutdown_event():
 # 包含 API 路由
 # 可以为 API 路由添加统一的前缀，例如 /api/v1
 app.include_router(api_routes.router, prefix="/api")
+
+# 健康检查端点 - 用于保活机制
+@app.get("/api/health")
+async def health_check():
+    """健康检查端点，返回当前状态和时间戳，用于保活"""
+    return {
+        "status": "ok",
+        "version": APP_VERSION,
+        "timestamp": datetime.now().isoformat(),
+        "environment": "production" if os.getenv("RENDER") else "development"
+    }
 
 # 主运行块，用于直接通过 python main.py 启动 (主要用于开发)
 if __name__ == "__main__":

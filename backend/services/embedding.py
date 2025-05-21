@@ -1,21 +1,44 @@
 from typing import List, Optional, Dict, Any
 import os
-import traceback
-import numpy as np
 import time
+import traceback
 import httpx
+import numpy as np
 import json
 
-# DeepSeek配置常量
+# 为Railway部署减少对配置文件的依赖
+# 尽量直接使用环境变量，避免导入错误
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_API_BASE_URL = os.environ.get("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com/openapi/v1")
-EMBEDDING_MODEL_NAME = os.environ.get("DEEPSEEK_EMBEDDING_MODEL", "deepseek-embed")  # DeepSeek官方推荐的embedding模型
+DEEPSEEK_EMBEDDING_MODEL = os.environ.get("DEEPSEEK_EMBEDDING_MODEL", "deepseek-embed")
+
+# 对于本地开发环境，尝试从配置文件加载配置
+try:
+    print("[尝试从配置文件加载]")
+    try:
+        from backend.config import DEEPSEEK_API_KEY as config_key, DEEPSEEK_API_BASE_URL as config_base, DEEPSEEK_EMBEDDING_MODEL as config_model
+    except ImportError:
+        try:
+            from config import DEEPSEEK_API_KEY as config_key, DEEPSEEK_API_BASE_URL as config_base, DEEPSEEK_EMBEDDING_MODEL as config_model
+        except ImportError:
+            print("[从配置文件加载失败，使用环境变量]")
+            config_key, config_base, config_model = None, None, None
+    
+    # 如果成功从配置文件读取，覆盖环境变量的值
+    if config_key: DEEPSEEK_API_KEY = config_key
+    if config_base: DEEPSEEK_API_BASE_URL = config_base
+    if config_model: DEEPSEEK_EMBEDDING_MODEL = config_model
+except Exception as e:
+    print(f"[警告] 加载配置文件时出现错误: {e}")
+    print("[继续] 使用环境变量继续运行")
+
+# DeepSeek配置常量
 EMBEDDING_DIMENSION = int(os.environ.get("DEEPSEEK_EMBEDDING_DIMENSION", 1024))  # DeepSeek embedding的默认维度
 EMBEDDING_BATCH_SIZE = int(os.environ.get("DEEPSEEK_EMBEDDING_BATCH_SIZE", 4))  # 每批处理的文本数量
 EMBEDDING_REQUEST_TIMEOUT = int(os.environ.get("DEEPSEEK_REQUEST_TIMEOUT", 60))  # 请求超时时间
 EMBEDDING_MAX_RETRIES = int(os.environ.get("DEEPSEEK_MAX_RETRIES", 3))  # 最大重试次数
 
-print(f"[服务初始化] 使用DeepSeek Embedding API: {EMBEDDING_MODEL_NAME}, 维度: {EMBEDDING_DIMENSION}")
+print(f"[服务初始化] 使用DeepSeek Embedding API: {DEEPSEEK_EMBEDDING_MODEL}, 维度: {EMBEDDING_DIMENSION}")
 if not DEEPSEEK_API_KEY:
     print("警告: 未设置DEEPSEEK_API_KEY环境变量。请确保在生产环境中设置此变量。")
 
@@ -24,7 +47,7 @@ class DeepSeekEmbeddingSingleton:
     _instance = None
     _http_client: Optional[httpx.Client] = None
     _dimension: int = int(EMBEDDING_DIMENSION)
-    _model_name: str = EMBEDDING_MODEL_NAME
+    _model_name: str = DEEPSEEK_EMBEDDING_MODEL
     
     def __new__(cls):
         if cls._instance is None:
@@ -188,7 +211,7 @@ def generate_embeddings(texts: List[str]) -> List[List[float]]:
     max_retries = EMBEDDING_MAX_RETRIES
     all_embeddings = []
     
-    print(f"使用DeepSeek {EMBEDDING_MODEL_NAME} 为 {len(texts)} 个文本块生成嵌入向量，批处理大小: {batch_size}")
+    print(f"使用DeepSeek {DEEPSEEK_EMBEDDING_MODEL} 为 {len(texts)} 个文本块生成嵌入向量，批处理大小: {batch_size}")
     
     # 将文本分批处理
     for i in range(0, len(texts), batch_size):

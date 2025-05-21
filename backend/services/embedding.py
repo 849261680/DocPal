@@ -8,8 +8,8 @@ import json
 
 # DeepSeek配置常量
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-DEEPSEEK_API_BASE_URL = os.environ.get("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com")
-EMBEDDING_MODEL_NAME = os.environ.get("DEEPSEEK_EMBEDDING_MODEL", "text-embedding-v1")  # DeepSeek的embedding模型
+DEEPSEEK_API_BASE_URL = os.environ.get("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com/openapi/v1")
+EMBEDDING_MODEL_NAME = os.environ.get("DEEPSEEK_EMBEDDING_MODEL", "deepseek-embed")  # DeepSeek官方推荐的embedding模型
 EMBEDDING_DIMENSION = int(os.environ.get("DEEPSEEK_EMBEDDING_DIMENSION", 1024))  # DeepSeek embedding的默认维度
 EMBEDDING_BATCH_SIZE = int(os.environ.get("DEEPSEEK_EMBEDDING_BATCH_SIZE", 4))  # 每批处理的文本数量
 EMBEDDING_REQUEST_TIMEOUT = int(os.environ.get("DEEPSEEK_REQUEST_TIMEOUT", 60))  # 请求超时时间
@@ -75,7 +75,7 @@ class DeepSeekEmbeddingSingleton:
         
         try:
             # 准备DeepSeek API请求
-            # 注意: DeepSeek API用的端点是/embeddings (v1前缀已经在基本URL中包含)
+            # 使用官方推荐的完整URL端点
             url = f"{DEEPSEEK_API_BASE_URL}/embeddings"
             headers = {
                 "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
@@ -87,12 +87,26 @@ class DeepSeekEmbeddingSingleton:
             }
             
             # 发送请求
+            print(f"[请求DeepSeek Embedding API] URL: {url}, 模型: {self._model_name}")
             response = self._http_client.post(url, headers=headers, json=payload)
+            
+            # API错误码监控日志
+            if response.status_code != 200:
+                error_message = f"DeepSeek API错误: 状态码 {response.status_code}"
+                try:
+                    error_data = response.json()
+                    if "error" in error_data:
+                        error_message += f", 错误信息: {error_data['error']}"
+                except Exception:
+                    error_message += f", 响应内容: {response.text[:200]}"
+                print(error_message)
+                
             response.raise_for_status()  # 检查HTTP响应状态
             response_data = response.json()
             
             # 从响应中提取嵌入向量
-            embeddings = [item.get("embedding", []) for item in response_data.get("data", [])]            
+            embeddings = [item.get("embedding", []) for item in response_data.get("data", [])]
+            print(f"[成功] 从 DeepSeek API 获取到 {len(embeddings)} 个嵌入向量")
             return embeddings
             
         except Exception as e:

@@ -474,3 +474,30 @@ async def reset_vector_store_compatibility_route(db: FAISSVectorStore = Depends(
     print("通过兼容路由请求重置向量数据库...")
     # 直接调用原始路由的处理逻辑
     return await reset_vector_store_route(db)
+
+# 添加对DELETE方法的支持
+@router.delete("/api/reset_vector_store", response_model=dict)
+async def reset_vector_store_delete_route(db: FAISSVectorStore = Depends(get_db)):
+    """
+    通过DELETE方法支持重置向量数据库
+    """
+    print("通过DELETE方法请求重置向量数据库...")
+    return await reset_vector_store_route(db)
+
+# 添加对GET方法的支持（不推荐，但为兼容性添加）
+@router.get("/api/reset_vector_store", response_model=dict)
+async def reset_vector_store_get_route(db: FAISSVectorStore = Depends(get_db)):
+    """
+    通过GET方法支持重置向量数据库（不推荐，但为兼容性添加）
+    """
+    print("通过GET方法请求重置向量数据库...")
+    return await reset_vector_store_route(db)
+
+# 添加对原始路径的DELETE方法支持
+@router.delete("/reset_vector_store", response_model=dict)
+async def reset_vector_store_delete_original_route(db: FAISSVectorStore = Depends(get_db)):
+    """
+    通过DELETE方法支持原始路径的重置向量数据库
+    """
+    print("通过原始路径DELETE方法请求重置向量数据库...")
+    return await reset_vector_store_route(db)

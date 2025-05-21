@@ -37,41 +37,19 @@ from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 from starlette.responses import Response
 
-print("启用手动CORS头设置以解决Render部署问题")
+# 移除重复的CORS中间件和OPTIONS处理程序，统一使用FastAPI的标准CORSMiddleware
 
-# 手动添加CORS头的中间件
-@app.middleware("http")
-async def add_cors_headers(request, call_next):
-    response = await call_next(request)
-    # 直接为所有响应添加CORS头
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
-
-# 处理OPTIONS请求，即预检请求
-@app.options("/{rest_of_path:path}")
-async def options_route(rest_of_path: str):
-    response = Response(
-        content="",
-        status_code=200,
-    )
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
-
-# 仍然保留原来的CORS中间件作为额外保障
+# 使用标准的CORS中间件处理所有跨域请求
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://enterprise-knowledge-hub.vercel.app", # Your Vercel frontend
-        "http://localhost:5173",                   # Common local dev (Vite)
-        "http://localhost:3000"                    # Common local dev (CRA)
+        "https://enterprise-knowledge-hub.vercel.app", # Vercel前端
+        "http://localhost:5173",                   # 本地开发环境 (Vite)
+        "http://localhost:3000"                    # 本地开发环境 (CRA)
     ],
-    allow_credentials=False, # Keep as False as per previous setup
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], # Explicitly list methods
-    allow_headers=["*"],  # Allow all headers
+    allow_credentials=False, 
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
     max_age=86400
 )
 
@@ -126,7 +104,7 @@ if __name__ == "__main__":
     # 从环境变量获取端口，如果未设置则默认为 8000
     # Uvicorn 的 --port 参数会覆盖这里的 host 和 port
     port = int(os.getenv("BACKEND_PORT", "8000"))
-    host = os.getenv("BACKEND_HOST", "127.0.0.1") # 默认监听本地地址
+    host = os.getenv("BACKEND_HOST", "0.0.0.0") # 默认监听所有网络接口，确保外部可访问
     
     print(f"准备在 {host}:{port} 启动 Uvicorn 服务器...")
     uvicorn.run(

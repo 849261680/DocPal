@@ -89,10 +89,20 @@ export default function FileUploader() {
   // 添加休眠函数
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   
-  // 添加重试逻辑的文件上传函数
-  const uploadFileWithRetry = async (file: File, baseApiUrl: string, maxRetries = 3) => {
+  // 优化的重试逻辑的文件上传函数
+  const uploadFileWithRetry = async (file: File, baseApiUrl: string, maxRetries = 2) => { // 减少重试次数从3减到2
+    // 加强的文件大小检查
+    const maxSize = 5 * 1024 * 1024; // 减少到 5MB
+    if (file.size > maxSize) {
+      throw new Error(`文件过大，请将文件大小控制在5MB以内`);
+    }
+    
+    // 添加请求ID来标识这个特定上传 - 避免重复处理
+    const requestId = Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("request_id", requestId); // 添加请求ID
     
     const uploadUrl = `${baseApiUrl}/api/upload_doc/`;
     console.log(`正在上传文件到: ${uploadUrl}`);
@@ -102,9 +112,9 @@ export default function FileUploader() {
     // 重试循环
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        // 添加超时处理 - 增加到90秒(1.5分钟)
+        // 使用更长的超时但减少重试次数
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 90000); // 1.5分钟超时
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2分钟超时
         
         const response = await fetch(uploadUrl, {
           method: "POST",
@@ -115,12 +125,29 @@ export default function FileUploader() {
         
         clearTimeout(timeoutId); // 清除超时
         
+        // 显示等待提示消息，通知用户正在处理
+        if (attempt === 0) {
+          toast({
+            title: "正在处理文件",
+            description: `请耐心等待，文件处理可能需要一些时间...`
+          });
+        }
+
         // 专门处理503错误（服务不可用，可能是Render休眠导致）
         if (response.status === 503) {
           if (attempt < maxRetries) {
+            // 显示服务唯渐通知
+            toast({
+              title: "服务正在启动",
+              description: `首次访问可能需要一点时间，请稍候...`,
+              duration: 5000 // 显示5秒
+            });
+            
             console.warn(`服务不可用(503)，正在第${attempt + 1}次重试文件上传(共${maxRetries}次)...`);
-            // 等待时间随重试次数增加
-            await sleep(2000 * (attempt + 1)); // 第一次等2秒，第二次4秒，第三次6秒
+            // 大幅延长等待时间
+            const waitTime = 8000 * (attempt + 1); // 第一次等8秒，第二次16秒
+            console.log(`等待 ${waitTime/1000} 秒后重试...`);
+            await sleep(waitTime);
             continue; // 继续下一次重试
           }
         }
@@ -139,6 +166,11 @@ export default function FileUploader() {
         
         // 处理AbortError（超时错误）
         if (err instanceof DOMException && err.name === 'AbortError') {
+          toast({
+            title: "文件上传超时",
+            description: `服务器响应过慢，可能是文件过大或网络问题`,
+            variant: "destructive"
+          });
           console.warn(`文件上传超时，正在第${attempt + 1}次重试(共${maxRetries}次)...`);
         } else {
           console.warn(`文件上传失败，正在第${attempt + 1}次重试(共${maxRetries}次)...错误：${lastError?.message}`);
@@ -149,9 +181,17 @@ export default function FileUploader() {
           throw lastError;
         }
         
-        // 指数退避策略，等待时间随重试次数增加
-        const waitTime = Math.min(2000 * Math.pow(2, attempt), 10000); // 最长等待10秒
+        // 大幅修改等待时间 - 使用更长的固定间隔而不是指数退避
+        const waitTime = 10000 * (attempt + 1); // 第一次等10秒，第二次20秒 - 比之前长得多
         console.log(`等待 ${waitTime/1000} 秒后重试...`);
+        
+        // 显示重试提示
+        toast({
+          title: `文件上传失败，正在重试`,
+          description: `将在${waitTime/1000}秒后再尝试上传...请耐心等待`,
+          duration: 5000
+        });
+        
         await sleep(waitTime);
       }
     }

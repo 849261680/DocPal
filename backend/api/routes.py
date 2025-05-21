@@ -51,23 +51,6 @@ class ProcessingStatus(str, Enum):
 
 router = APIRouter()
 
-# 添加专门处理OPTIONS请求的端点，确保CORS预检请求得到正确响应
-@router.options("/{path:path}")
-async def options_route(path: str):
-    """
-    处理所有OPTIONS请求，确保CORS预检请求得到正确响应
-    """
-    return JSONResponse(
-        content={"message": "CORS预检请求成功"},
-        status_code=200,
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            "Access-Control-Max-Age": "86400"
-        }
-    )
-
 # Dependency to get the vector store instance
 def get_db() -> FAISSVectorStore:
     return get_vector_store()

@@ -13,8 +13,9 @@ else:
 
 # DeepSeek API 配置
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-# 更新DeepSeek API的基本URL为官方推荐的正确地址
-DEEPSEEK_API_BASE_URL = os.getenv("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com/openapi/v1")
+# 修正DeepSeek API的URL
+# DeepSeek的API基础URL不包含具体端点，并且不带结尾的斜杠
+DEEPSEEK_API_BASE_URL = os.getenv("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com")
 CHAT_MODEL = os.getenv("CHAT_MODEL", "deepseek-chat")
 
 # 向量数据库配置

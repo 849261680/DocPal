@@ -75,8 +75,8 @@ class DeepSeekEmbeddingSingleton:
         
         try:
             # 准备DeepSeek API请求
-            # 使用官方推荐的完整URL端点
-            url = f"{DEEPSEEK_API_BASE_URL}/embeddings"
+            # 使用官方正确的端点URL
+            url = f"{DEEPSEEK_API_BASE_URL}/openapi/v1/embeddings"
             headers = {
                 "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
                 "Content-Type": "application/json"
@@ -86,23 +86,71 @@ class DeepSeekEmbeddingSingleton:
                 "input": texts
             }
             
+            # 打印详细调试信息
+            print(f"[DEBUG] DeepSeek API 请求细节:")
+            print(f"[DEBUG] - URL: {url}")
+            print(f"[DEBUG] - 模型: {self._model_name}")
+            print(f"[DEBUG] - API密钥是否存在: {bool(DEEPSEEK_API_KEY)}")
+            if DEEPSEEK_API_KEY:
+                print(f"[DEBUG] - API密钥前几位: {DEEPSEEK_API_KEY[:5]}...")
+            print(f"[DEBUG] - 输入文本数量: {len(texts)}")
+            if texts:
+                print(f"[DEBUG] - 第一个文本开头: {texts[0][:50]}...")
+            
             # 发送请求
-            print(f"[请求DeepSeek Embedding API] URL: {url}, 模型: {self._model_name}")
+            print(f"[DEBUG] 请求Headers: {headers}")
+            print(f"[DEBUG] 请求Payload: {payload}")
             response = self._http_client.post(url, headers=headers, json=payload)
             
-            # API错误码监控日志
+            # 打印完整响应，包括状态码和响应内容，无论成功与否
+            print(f"[DEBUG] 响应状态码: {response.status_code}")
+            print(f"[DEBUG] 响应头: {dict(response.headers)}")
+            try:
+                response_text = response.text
+                print(f"[DEBUG] 响应内容: {response_text[:500]}...")  # 限制输出大小
+                response_json = response.json() if response_text else {}
+                print(f"[DEBUG] 响应JSON: {response_json}")
+            except Exception as parse_error:
+                print(f"[DEBUG] 解析响应失败: {parse_error}")
+                print(f"[DEBUG] 原始响应: {response.text[:200]}")
+            
+            # 分析响应
+            print(f"[DEBUG] 响应状态码: {response.status_code}")
+            print(f"[DEBUG] 响应头: {dict(response.headers)}")
+            
+            # 完整分析响应内容
+            try:
+                response_text = response.text
+                print(f"[DEBUG] 原始响应内容: {response_text[:300]}")
+                
+                # 只在有响应内容时尝试解析JSON
+                if response_text:
+                    response_data = response.json()
+                    print(f"[DEBUG] 响应JSON: {response_data}")
+                else:
+                    response_data = {}
+            except Exception as parse_error:
+                print(f"[DEBUG] 解析响应失败: {parse_error}")
+                response_data = {}
+            
+            # API错误处理
             if response.status_code != 200:
                 error_message = f"DeepSeek API错误: 状态码 {response.status_code}"
-                try:
-                    error_data = response.json()
-                    if "error" in error_data:
-                        error_message += f", 错误信息: {error_data['error']}"
-                except Exception:
-                    error_message += f", 响应内容: {response.text[:200]}"
-                print(error_message)
                 
-            response.raise_for_status()  # 检查HTTP响应状态
-            response_data = response.json()
+                # 尝试从响应中提取错误信息
+                if response_data and "error" in response_data:
+                    error_message += f", 错误信息: {response_data['error']}"
+                elif response_data and "message" in response_data:
+                    error_message += f", 错误信息: {response_data['message']}"
+                
+                print(f"[ERROR] {error_message}")
+                print(f"[DEBUG] 尝试其他可能的URL端点:")
+                print(f"  - {DEEPSEEK_API_BASE_URL}/v1/embeddings")
+                print(f"  - {DEEPSEEK_API_BASE_URL}/api/v1/embeddings")
+                print(f"  - {DEEPSEEK_API_BASE_URL}/embeddings")
+                
+                # 仍然抛出异常以开始重试流程
+                response.raise_for_status()
             
             # 从响应中提取嵌入向量
             embeddings = [item.get("embedding", []) for item in response_data.get("data", [])]

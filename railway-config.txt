@@ -1,0 +1,24 @@
+# Railway部署配置示例
+# 请在Railway dashboard中配置以下环境变量
+
+# 基本配置
+PORT=8000
+PYTHONUNBUFFERED=1
+
+# 内存优化
+WEB_CONCURRENCY=1
+UVICORN_WORKERS=1
+OMP_NUM_THREADS=1
+MKL_NUM_THREADS=1
+NUMBA_DISABLE_JIT=1
+OPENAI_EMBEDDING_BATCH_SIZE=4
+
+# OpenAI API配置
+# OPENAI_API_KEY=your_api_key_here
+# OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+# OPENAI_EMBEDDING_DIMENSION=1536
+# OPENAI_REQUEST_TIMEOUT=60
+# OPENAI_MAX_RETRIES=3
+
+# CORS配置
+CORS_ORIGINS=https://enterprise-knowledge-hub.vercel.app,http://localhost:5173,http://localhost:3000

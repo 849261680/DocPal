@@ -32,31 +32,18 @@ app = FastAPI(
 )
 
 # CORS (Cross-Origin Resource Sharing) 中间件配置
-# 从环境变量读取允许的源，如果没有设置，则默认为本地开发环境的地址和vercel.app
-allowed_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000,https://enterprise-knowledge-hub.vercel.app,https://*.vercel.app")
-origins = [origin.strip() for origin in allowed_origins_str.split(',')]
+# 直接允许所有源访问，解决Render上的CORS问题
+print("启用全开放CORS配置以解决Render部署问题")
 
-# 确保前端域名在CORS允许列表中
-frontend_url = "https://enterprise-knowledge-hub.vercel.app"
-if frontend_url not in origins:
-    origins.append(frontend_url)
-
-# 添加通配符确保所有环境都可以工作
-if "*" not in origins:
-    origins.append("*")
-
-# 打印当前允许的CORS源，用于调试
-print(f"当前CORS允许的源: {origins}")
-
-# 确保CORS配置生效 - 使用明确配置以适应Render环境
+# 添加更简单的CORS中间件
+# 使用通配符允许所有源访问，解决部署问题
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # 使用具体域名列表而不是通配符
-    allow_credentials=False, # 前端已改为 omit, 后端不再需要允许凭据
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-    allow_headers=["*"],
+    allow_origins=["*"],  # 允许所有源
+    allow_credentials=False,
+    allow_methods=["*"],  # 允许所有方法
+    allow_headers=["*"],  # 允许所有头
     max_age=86400,  # 预检请求的缓存时间 (24小时)
-    expose_headers=["Content-Disposition", "Content-Length", "Content-Type"]
 )
 
 # 应用启动事件处理器

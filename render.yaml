@@ -7,9 +7,22 @@ services:
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: CORS_ORIGINS
-        value: https://your-frontend-url.vercel.app,http://localhost:3000
+        value: https://enterprise-knowledge-hub.vercel.app,http://localhost:3000,*
       - key: PYTHONUNBUFFERED
-        value: true
+        value: "true"
+      - key: PORT
+        value: "8000"
+      - key: PYTHON_VERSION
+        value: "3.9.16"
+      # 禁用多线程以节省内存
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: MKL_NUM_THREADS
+        value: "1"
+    
+    # 健康检查配置
+    healthCheckPath: /api/health
+    healthCheckTimeout: 300 # 增加健康检查超时，给ML模型加载更多时间
     
     # 持久存储配置
     disk:

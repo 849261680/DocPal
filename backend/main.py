@@ -40,13 +40,32 @@ from starlette.responses import Response
 # 移除重复的CORS中间件和OPTIONS处理程序，统一使用FastAPI的标准CORSMiddleware
 
 # 使用标准的CORS中间件处理所有跨域请求
+# 使用环境变量来设置允许的源域名
+default_origins = [
+    "https://enterprise-knowledge-hub.vercel.app",  # Vercel前端
+    "http://localhost:5173",                       # 本地开发环境 (Vite)
+    "http://localhost:3000"                        # 本地开发环境 (CRA)
+]
+
+# 从环境变量中获取CORS配置
+cors_env = os.environ.get("CORS_ORIGINS", "")
+if cors_env:
+    # 使用环境变量设置的域名列表（逗号分隔）
+    origins = cors_env.split(",")
+    print(f"[从环境变量读取CORS域名] {origins}")
+else:
+    # 使用默认列表
+    origins = default_origins
+    print(f"[使用默认CORS域名] {origins}")
+
+# 添加特殊配置，添加"*"来允许所有源（开发时使用）
+if "*" in origins:
+    origins = ["*"]
+    print("警告: 开启了允许所有源的CORS访问")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://enterprise-knowledge-hub.vercel.app", # Vercel前端
-        "http://localhost:5173",                   # 本地开发环境 (Vite)
-        "http://localhost:3000"                    # 本地开发环境 (CRA)
-    ],
+    allow_origins=origins,
     allow_credentials=False, 
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],

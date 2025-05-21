@@ -7,16 +7,15 @@ import { Upload, CheckCircle, Loader2 } from "lucide-react";
 
 // 使用CORS代理服务，解决CORS问题
 const useCorsProxy = (url: string) => {
-  // 只为render.com域名使用代理
-  if (url.includes('enterprise-knowledge-hub-backend.onrender.com') || url.includes('render.com')) {
-    // 文件上传不使用代理，因为大多数CORS代理不支持POST请求和二进制文件传输
-    if (url.includes('upload_doc')) {
-      return url; // 文件上传直接使用原始URL
-    }
-    // 其他请求使用allorigins.win作为代理服务
-    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  // 文件上传不使用代理
+  if (url.includes('upload_doc')) {
+    return url; 
   }
-  return url;
+  // 生产环境 (onrender.com) 或其他非本地开发环境，通常应该由后端正确处理CORS，不再需要代理
+  if (url.includes('onrender.com') || (import.meta.env.PROD && !window.location.hostname.includes('localhost'))) {
+    return url; // 直接返回原始URL，不使用代理
+  }
+  return url; // 默认情况下，我们相信后端能处理CORS
 };
 
 // 检查URL是否使用了代理

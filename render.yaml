@@ -1,7 +1,9 @@
 services:
   - type: web
-    name: enterprise-knowledge-hub
+    name: enterprise-knowledge-hub-backend
     env: python
+    plan: free
+    pythonVersion: 3.9.17
     region: singapore  # 选择亚洲区域减少延迟
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
@@ -9,7 +11,7 @@ services:
       - key: CORS_ORIGINS
         value: https://enterprise-knowledge-hub.vercel.app,http://localhost:3000,*
       - key: PYTHONUNBUFFERED
-        value: "true"
+        value: "1"
       - key: PORT
         value: "8000"
       - key: PYTHON_VERSION
@@ -19,6 +21,19 @@ services:
         value: "1"
       - key: MKL_NUM_THREADS
         value: "1"
+      # 调低worker数量以减少内存使用
+      - key: WEB_CONCURRENCY
+        value: "1"
+      # 设置最大并发请求数，避免处理过多并发文档
+      - key: UVICORN_WORKERS
+        value: "1"
+      # 禁用JIT以节省内存
+      - key: NUMBA_DISABLE_JIT
+        value: "1"
+      # 限制向量嵌入批处理大小  
+      - key: EMBEDDING_BATCH_SIZE
+        value: "4"  
+    # 健康检查路径
     
     # 健康检查配置
     healthCheckPath: /api/health

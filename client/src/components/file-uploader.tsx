@@ -86,6 +86,80 @@ export default function FileUploader() {
     }
   };
   
+  // 添加休眠函数
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  
+  // 添加重试逻辑的文件上传函数
+  const uploadFileWithRetry = async (file: File, baseApiUrl: string, maxRetries = 3) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    const uploadUrl = `${baseApiUrl}/api/upload_doc/`;
+    console.log(`正在上传文件到: ${uploadUrl}`);
+    
+    let lastError: Error | null = null;
+    
+    // 重试循环
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // 添加超时处理 - 增加到90秒(1.5分钟)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 90000); // 1.5分钟超时
+        
+        const response = await fetch(uploadUrl, {
+          method: "POST",
+          body: formData,
+          credentials: 'omit', // 始终不发送凭据
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId); // 清除超时
+        
+        // 专门处理503错误（服务不可用，可能是Render休眠导致）
+        if (response.status === 503) {
+          if (attempt < maxRetries) {
+            console.warn(`服务不可用(503)，正在第${attempt + 1}次重试文件上传(共${maxRetries}次)...`);
+            // 等待时间随重试次数增加
+            await sleep(2000 * (attempt + 1)); // 第一次等2秒，第二次4秒，第三次6秒
+            continue; // 继续下一次重试
+          }
+        }
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`上传失败: ${response.status} ${response.statusText}`, errorText);
+          throw new Error(errorText || `上传失败: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log(`文件 ${file.name} 上传成功:`, result);
+        return result;
+      } catch (err) {
+        lastError = err as Error;
+        
+        // 处理AbortError（超时错误）
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          console.warn(`文件上传超时，正在第${attempt + 1}次重试(共${maxRetries}次)...`);
+        } else {
+          console.warn(`文件上传失败，正在第${attempt + 1}次重试(共${maxRetries}次)...错误：${lastError?.message}`);
+        }
+        
+        // 如果已经是最后一次尝试，则抛出错误
+        if (attempt >= maxRetries) {
+          throw lastError;
+        }
+        
+        // 指数退避策略，等待时间随重试次数增加
+        const waitTime = Math.min(2000 * Math.pow(2, attempt), 10000); // 最长等待10秒
+        console.log(`等待 ${waitTime/1000} 秒后重试...`);
+        await sleep(waitTime);
+      }
+    }
+    
+    // 这里不应该到达，但为了类型检查，添加这个抛出
+    throw new Error("重试失败");
+  };
+  
   const handleUpload = async () => {
     if (!selectedFiles || selectedFiles.length === 0) return;
     
@@ -100,40 +174,15 @@ export default function FileUploader() {
         const file = selectedFiles[i];
         console.log(`准备上传文件: ${file.name}, 大小: ${file.size} 字节, 类型: ${file.type}`);
         
-        const formData = new FormData();
-        formData.append("file", file);
-        
         // 显示正在上传哪个文件
         toast({
           title: `上传中 (${i + 1}/${selectedFiles.length})`,
-          description: file.name
+          description: `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
         });
         
-        // 添加超时处理 - 增加到120秒 (2分钟)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2分钟超时
-        
         try {
-          // 构建上传URL
-          const uploadUrl = `${baseApiUrl}/api/upload_doc/`;
-          console.log(`正在上传文件到: ${uploadUrl}`);
-          
-          const response = await fetch(uploadUrl, {
-            method: "POST",
-            body: formData,
-            credentials: 'omit', // 始终不发送凭据
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId); // 清除超时
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`上传失败: ${response.status} ${response.statusText}`, errorText);
-            throw new Error(errorText || `上传失败: ${response.status}`);
-          }
-          
-          const result = await response.json();
+          // 使用带重试逻辑的上传函数
+          const result = await uploadFileWithRetry(file, baseApiUrl, 3);
           console.log(`文件 ${file.name} 上传成功:`, result);
         } catch (fileError) {
           // 处理单个文件上传错误

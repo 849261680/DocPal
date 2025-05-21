@@ -1,98 +1,152 @@
-from sentence_transformers import SentenceTransformer
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+import os
+import traceback
 import numpy as np
-import torch # 确保 torch 可用，sentence-transformers 依赖它
-import traceback # 确保导入
-import os # 添加os模块导入
+import time
 
-# 直接从环境变量获取，不使用配置模块中的值
-# from backend.config import EMBEDDING_MODEL_NAME
-# 优先使用环境变量中的设置，如果没有则使用默认值
-EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
-print(f"[服务初始化] 从环境变量加载嵌入模型: {EMBEDDING_MODEL_NAME}")
+# 导入OpenAI库
+from openai import OpenAI
+import tiktoken
 
-class EmbeddingModelSingleton:
+# OpenAI配置常量
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+EMBEDDING_MODEL_NAME = os.environ.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+EMBEDDING_DIMENSION = os.environ.get("OPENAI_EMBEDDING_DIMENSION", 1536)  # text-embedding-3-small的维度
+EMBEDDING_BATCH_SIZE = int(os.environ.get("OPENAI_EMBEDDING_BATCH_SIZE", 4))  # 每批处理的文本数量
+EMBEDDING_REQUEST_TIMEOUT = int(os.environ.get("OPENAI_REQUEST_TIMEOUT", 60))  # 请求超时时间
+EMBEDDING_MAX_RETRIES = int(os.environ.get("OPENAI_MAX_RETRIES", 3))  # 最大重试次数
+
+print(f"[服务初始化] 使用OpenAI Embedding API: {EMBEDDING_MODEL_NAME}, 维度: {EMBEDDING_DIMENSION}")
+if not OPENAI_API_KEY:
+    print("警告: 未设置OPENAI_API_KEY环境变量。请确保在生产环境中设置此变量。")
+
+class OpenAIEmbeddingSingleton:
+    """OpenAI Embedding API封装类，实现单例模式"""
     _instance = None
-    _model: Optional[SentenceTransformer] = None
-    _dimension: Optional[int] = None
-
+    _client: Optional[OpenAI] = None
+    _dimension: int = int(EMBEDDING_DIMENSION)
+    _model_name: str = EMBEDDING_MODEL_NAME
+    
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(EmbeddingModelSingleton, cls).__new__(cls)
-            # 只进行基本初始化，不在这里加载模型或计算维度
-            # 模型加载和维度计算推迟到首次 get_model() 或 get_dimension() 调用
-            print("[EmbeddingSingleton.__new__] Instance created. Model will be loaded on first use.")
+            cls._instance = super(OpenAIEmbeddingSingleton, cls).__new__(cls)
+            print("[OpenAIEmbeddingSingleton.__new__] 实例已创建，客户端将在首次使用时初始化")
         return cls._instance
-
-    def _load_model_if_needed(self):
-        # 每次加载前重新检查环境变量
-        global EMBEDDING_MODEL_NAME
-        EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
-        
-        if self._model is None:
+    
+    def _init_client_if_needed(self):
+        """初始化OpenAI客户端（如果尚未初始化）"""
+        if self._client is None:
             try:
-                device = 'cuda' if torch.cuda.is_available() else 'cpu'
-                print(f"[EmbeddingSingleton._load_model_if_needed] 准备初始化 SentenceTransformer: {EMBEDDING_MODEL_NAME} on {device}...")
-                self._model = SentenceTransformer(EMBEDDING_MODEL_NAME, device=device)
-                print(f"[EmbeddingSingleton._load_model_if_needed] SentenceTransformer 初始化完毕。模型对象: {type(self._model)}")
-            except Exception as e_load:
-                print(f"[EmbeddingSingleton._load_model_if_needed] 加载/初始化嵌入模型 {EMBEDDING_MODEL_NAME} 失败: {e_load}")
+                # 检查API密钥
+                if not OPENAI_API_KEY:
+                    raise ValueError("未设置OPENAI_API_KEY环境变量")
+                    
+                # 初始化客户端
+                print(f"[OpenAIEmbeddingSingleton] 正在初始化OpenAI客户端...")
+                self._client = OpenAI(api_key=OPENAI_API_KEY, timeout=EMBEDDING_REQUEST_TIMEOUT)
+                print(f"[OpenAIEmbeddingSingleton] OpenAI客户端初始化完成")
+                
+                # 更新模型名称和维度
+                self._model_name = os.environ.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+                self._dimension = int(os.environ.get("OPENAI_EMBEDDING_DIMENSION", 1536))
+                
+            except Exception as e:
+                print(f"[OpenAIEmbeddingSingleton] OpenAI客户端初始化失败: {e}")
                 traceback.print_exc()
-                self._model = None # 确保失败时 _model 为 None
-                self._dimension = None
-                raise RuntimeError(f"无法加载嵌入模型: {e_load}") # 重新抛出，让调用者知道失败
-
-    def get_model(self) -> SentenceTransformer:
-        self._load_model_if_needed() # 确保模型已加载
-        if self._model is None: # 再次检查，如果 _load_model_if_needed 内部失败但未抛出或被捕获
-             raise RuntimeError("嵌入模型未能成功加载，get_model 返回 None 是无效的。")
-        return self._model
-
-    def get_dimension(self) -> Optional[int]:
-        self._load_model_if_needed() # 确保模型已加载才能获取维度
-        if self._model and self._dimension is None:
-            print("[EmbeddingSingleton.get_dimension] 模型已加载，但维度未知。准备对测试字符串编码...")
-            try:
-                dummy_emb = self._model.encode(["test_for_dim_on_get_dimension"])
-                self._dimension = dummy_emb.shape[1]
-                print(f"[EmbeddingSingleton.get_dimension] 维度计算成功: {self._dimension}")
-            except Exception as e_dim:
-                print(f"[EmbeddingSingleton.get_dimension] 获取模型 {EMBEDDING_MODEL_NAME} 维度失败: {e_dim}")
-                traceback.print_exc()
-                # 不将 self._dimension 设为 None，允许后续重试，或者让调用者处理 None
-                # 但如果这里失败，很可能 encode 调用都会失败
-                return None # 直接返回 None，表示维度获取失败
-        
+                self._client = None
+                raise RuntimeError(f"无法初始化OpenAI客户端: {e}")
+    
+    def get_client(self) -> OpenAI:
+        """获取OpenAI客户端实例"""
+        self._init_client_if_needed()
+        if self._client is None:
+            raise RuntimeError("OpenAI客户端未能成功初始化")
+        return self._client
+    
+    def get_dimension(self) -> int:
+        """获取嵌入向量的维度"""
         return self._dimension
+    
+    def generate_batch_embeddings(self, texts: List[str]) -> List[List[float]]:
+        """为一批文本生成嵌入向量"""
+        if not texts:
+            return []
+            
+        self._init_client_if_needed()
+        
+        try:
+            response = self._client.embeddings.create(
+                model=self._model_name,
+                input=texts,
+                encoding_format="float"
+            )
+            
+            # 从响应中提取嵌入向量
+            embeddings = [item.embedding for item in response.data]
+            return embeddings
+            
+        except Exception as e:
+            print(f"[OpenAIEmbeddingSingleton] 生成嵌入向量失败: {e}")
+            traceback.print_exc()
+            raise e
 
-def get_embedding_model() -> SentenceTransformer:
-    """获取 SentenceTransformer 模型实例"""
-    return EmbeddingModelSingleton().get_model()
+def get_embedding_model() -> OpenAIEmbeddingSingleton:
+    """获取OpenAI Embedding模型单例实例"""
+    return OpenAIEmbeddingSingleton()
 
-def get_embedding_dimension() -> Optional[int]: # 新增辅助函数
-    return EmbeddingModelSingleton().get_dimension()
+def get_embedding_dimension() -> int:
+    """获取嵌入向量的维度"""
+    return OpenAIEmbeddingSingleton().get_dimension()
 
 def generate_embeddings(texts: List[str]) -> List[List[float]]:
     """
     为一批文本生成嵌入向量。
-    返回一个列表，其中每个元素是对应文本的嵌入向量 (float 列表)。
+    返回一个列表，其中每个元素是对应文本的嵌入向量。
+    实现了批处理和重试逻辑。
     """
-    model = get_embedding_model()
     if not texts:
         return []
-    try:
-        print(f"使用模型 {EMBEDDING_MODEL_NAME} 为 {len(texts)} 个文本块生成嵌入...")
-        # SentenceTransformer 的 encode 方法返回 numpy 数组列表
-        embeddings_np = model.encode(texts, batch_size=16, show_progress_bar=True)
-        # 将 numpy 数组转换为 float 列表
-        embeddings_list = [emb.tolist() for emb in embeddings_np]
-        print(f"成功为 {len(texts)} 个文本块生成嵌入。")
-        return embeddings_list
-    except Exception as e:
-        print(f"使用模型 {EMBEDDING_MODEL_NAME} 生成嵌入时发生错误: {e}")
-        traceback.print_exc()
-        # 根据需要，这里可以返回空列表或重新抛出异常
-        return []
-
-# 可以在模块加载时尝试初始化模型，以便尽早发现问题
-# get_embedding_model() 
+        
+    model = get_embedding_model()
+    batch_size = EMBEDDING_BATCH_SIZE
+    max_retries = EMBEDDING_MAX_RETRIES
+    all_embeddings = []
+    
+    print(f"使用OpenAI {EMBEDDING_MODEL_NAME} 为 {len(texts)} 个文本块生成嵌入向量，批处理大小: {batch_size}")
+    
+    # 将文本分批处理
+    for i in range(0, len(texts), batch_size):
+        batch_texts = texts[i:i+batch_size]
+        retries = 0
+        success = False
+        
+        while not success and retries < max_retries:
+            try:
+                if retries > 0:
+                    print(f"第 {retries} 次重试批次 {i//batch_size + 1}/{(len(texts)-1)//batch_size + 1}...")
+                    # 指数退避
+                    time.sleep(2 ** retries)
+                
+                batch_embeddings = model.generate_batch_embeddings(batch_texts)
+                all_embeddings.extend(batch_embeddings)
+                success = True
+                print(f"成功处理批次 {i//batch_size + 1}/{(len(texts)-1)//batch_size + 1}，{len(batch_texts)} 个文本")
+                
+            except Exception as e:
+                retries += 1
+                print(f"批次 {i//batch_size + 1} 处理失败 (尝试 {retries}/{max_retries}): {e}")
+                
+                if retries >= max_retries:
+                    print(f"批次 {i//batch_size + 1} 达到最大重试次数，跳过")
+                    # 对于失败的批次，添加空嵌入向量
+                    empty_embeddings = [[0.0] * get_embedding_dimension() for _ in range(len(batch_texts))]
+                    all_embeddings.extend(empty_embeddings)
+    
+    if len(all_embeddings) != len(texts):
+        print(f"警告: 生成的嵌入向量数量 ({len(all_embeddings)}) 与文本数量 ({len(texts)}) 不匹配")
+        # 确保返回结果数量与输入文本数量一致
+        while len(all_embeddings) < len(texts):
+            all_embeddings.append([0.0] * get_embedding_dimension())
+    
+    print(f"成功为 {len(texts)} 个文本块生成嵌入向量")
+    return all_embeddings

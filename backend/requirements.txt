@@ -2,7 +2,6 @@ fastapi
 uvicorn
 langchain
 langchain-core
-sentence-transformers>=2.2.2
 faiss-cpu
 numpy~=1.26.4
 python-dotenv
@@ -10,7 +9,12 @@ python-multipart
 httpx
 PyMuPDF==1.22.5
 docx2txt
-torch==2.2.1 --index-url https://download.pytorch.org/whl/cpu
-transformers==4.38.2
 typing_extensions
-pydantic 
+pydantic
+# 添加OpenAI依赖替代sentence-transformers
+openai>=1.6.0
+tiktoken>=0.5.1
+# 保留以下依赖作为备选方案
+# sentence-transformers>=2.2.2
+# torch==2.2.1 --index-url https://download.pytorch.org/whl/cpu
+# transformers==4.38.2

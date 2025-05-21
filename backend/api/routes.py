@@ -463,3 +463,14 @@ async def delete_all_documents_route(db: FAISSVectorStore = Depends(get_db)):
         print(f"删除所有文档时出错: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"删除所有文档时发生错误: {str(e)}")
+
+# 兼容前端错误的URL路径
+@router.post("/api/reset_vector_store", response_model=dict)
+async def reset_vector_store_compatibility_route(db: FAISSVectorStore = Depends(get_db)):
+    """
+    兼容前端错误URL路径的向量数据库重置功能。
+    这个路由处理错误URL格式 /api/api/reset_vector_store 的请求。
+    """
+    print("通过兼容路由请求重置向量数据库...")
+    # 直接调用原始路由的处理逻辑
+    return await reset_vector_store_route(db)

@@ -43,7 +43,13 @@ async def options_route(path: str):
     """
     return JSONResponse(
         content={"message": "CORS预检请求成功"},
-        status_code=200
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Max-Age": "86400"
+        }
     )
 
 # Dependency to get the vector store instance
@@ -132,7 +138,7 @@ async def upload_document_route(file: UploadFile = File(...), db: FAISSVectorSto
     finally:
         await file.close()
 
-@router.post("/query/", response_model=QueryResponse)
+@router.post("/query", response_model=QueryResponse)
 async def query_route(request: QueryRequest = Body(...)):
     """
     接收用户查询，通过 RAG 流程生成答案并返回。
@@ -228,7 +234,7 @@ async def reset_vector_store_route(db: FAISSVectorStore = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"重置向量数据库时发生错误: {str(e)}")
 
 # 获取当前向量数据库中的文档数量
-@router.get("/vector_store_size/", response_model=dict)
+@router.get("/vector_store_size", response_model=dict)
 async def get_vector_store_size_route(db: FAISSVectorStore = Depends(get_db)):
     """
     获取当前向量数据库中存储的文档块数量。
@@ -240,6 +246,14 @@ async def get_vector_store_size_route(db: FAISSVectorStore = Depends(get_db)):
         print(f"获取向量数据库大小时出错: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"获取向量数据库大小时发生错误: {str(e)}")
+
+# 添加POST方法路由以兼容前端
+@router.post("/vector_store_size", response_model=dict)
+async def post_vector_store_size_route(db: FAISSVectorStore = Depends(get_db)):
+    """
+    获取当前向量数据库中存储的文档块数量（POST方法）。
+    """
+    return await get_vector_store_size_route(db)
 
 # 新增：获取文档列表
 @router.delete("/documents/{filename}", response_model=dict)
@@ -281,7 +295,7 @@ async def delete_document_route(filename: str, db: FAISSVectorStore = Depends(ge
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"删除文档时发生错误: {str(e)}")
 
-@router.get("/documents/", response_model=DocumentListResponse)
+@router.get("/documents", response_model=DocumentListResponse)
 async def get_documents_route():
     """
     获取已上传的所有文档列表
@@ -315,3 +329,11 @@ async def get_documents_route():
         print(f"获取文档列表时出错: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"获取文档列表时发生错误: {str(e)}")
+
+# 添加POST方法路由以兼容前端
+@router.post("/documents", response_model=DocumentListResponse)
+async def post_documents_route():
+    """
+    获取已上传的所有文档列表（POST方法）
+    """
+    return await get_documents_route()

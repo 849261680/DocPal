@@ -26,6 +26,10 @@ async function throwIfResNotOk(res: Response) {
 const useCorsProxy = (url: string) => {
   // 只为render.com域名使用代理
   if (url.includes('enterprise-knowledge-hub-backend.onrender.com') || url.includes('render.com')) {
+    // 文件上传不使用代理，因为大多数CORS代理不支持POST请求和二进制文件传输
+    if (url.includes('upload_doc')) {
+      return url; // 文件上传直接使用原始URL
+    }
     // 尝试使用多种CORS代理服务，如果一个失败可以尝试另一个
     // 使用CORS Anywhere作为第一选择
     return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
@@ -57,14 +61,11 @@ export async function apiRequest(
   const proxiedUrl = useCorsProxy(fullUrl);
   console.log(`发送请求到: ${fullUrl}`, proxiedUrl !== fullUrl ? `(通过代理: ${proxiedUrl})` : '');
   
-  // 如果使用代理，则不发送credentials
-  const useCredentials = !isProxiedUrl(proxiedUrl);
-  
   const res = await fetch(proxiedUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
-    credentials: useCredentials ? "include" : "omit", // 使用代理时不发送凭据
+    credentials: "omit", // 始终不发送凭据
   });
 
   await throwIfResNotOk(res);
@@ -81,11 +82,9 @@ export const getQueryFn: <T>(options: {
 
     console.log(`查询请求: ${fullUrl}`);
     
-    // 检查是否是代理URL
-    const useCredentials = !isProxiedUrl(fullUrl);
-    
     const res = await fetch(fullUrl, {
-      credentials: useCredentials ? "include" : "omit", // 使用代理时不发送凭据
+      method: "POST", // 使用POST方法而不是默认的GET
+      credentials: "omit", // 始终不发送凭据
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

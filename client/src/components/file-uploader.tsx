@@ -9,7 +9,11 @@ import { Upload, CheckCircle, Loader2 } from "lucide-react";
 const useCorsProxy = (url: string) => {
   // 只为render.com域名使用代理
   if (url.includes('enterprise-knowledge-hub-backend.onrender.com') || url.includes('render.com')) {
-    // 使用allorigins.win作为代理服务
+    // 文件上传不使用代理，因为大多数CORS代理不支持POST请求和二进制文件传输
+    if (url.includes('upload_doc')) {
+      return url; // 文件上传直接使用原始URL
+    }
+    // 其他请求使用allorigins.win作为代理服务
     return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
   }
   return url;
@@ -115,13 +119,10 @@ export default function FileUploader() {
             
           console.log(`正在上传文件到: ${backendUrl}`, proxiedUrl !== backendUrl ? `(通过代理: ${proxiedUrl})` : '');
           
-          // 检查是否是代理URL
-          const useCredentials = !isProxiedUrl(proxiedUrl);
-          
           const response = await fetch(proxiedUrl, {
             method: "POST",
             body: formData,
-            credentials: useCredentials ? 'include' : 'omit', // 使用代理时不发送凭据
+            credentials: 'omit', // 始终不发送凭据
             signal: controller.signal
           });
           

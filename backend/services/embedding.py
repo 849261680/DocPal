@@ -3,8 +3,13 @@ from typing import List, Optional
 import numpy as np
 import torch # 确保 torch 可用，sentence-transformers 依赖它
 import traceback # 确保导入
+import os # 添加os模块导入
 
-from backend.config import EMBEDDING_MODEL_NAME
+# 直接从环境变量获取，不使用配置模块中的值
+# from backend.config import EMBEDDING_MODEL_NAME
+# 优先使用环境变量中的设置，如果没有则使用默认值
+EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
+print(f"[服务初始化] 从环境变量加载嵌入模型: {EMBEDDING_MODEL_NAME}")
 
 class EmbeddingModelSingleton:
     _instance = None
@@ -20,6 +25,10 @@ class EmbeddingModelSingleton:
         return cls._instance
 
     def _load_model_if_needed(self):
+        # 每次加载前重新检查环境变量
+        global EMBEDDING_MODEL_NAME
+        EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
+        
         if self._model is None:
             try:
                 device = 'cuda' if torch.cuda.is_available() else 'cpu'

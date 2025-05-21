@@ -6,7 +6,8 @@ import os
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
     print(f"[Config] Loading .env file from: {dotenv_path}")
-    load_dotenv(dotenv_path=dotenv_path)
+    # 设置override=False，确保已存在的环境变量不会被.env文件覆盖
+    load_dotenv(dotenv_path=dotenv_path, override=False)
 else:
     print(f"[Config] .env file not found at: {dotenv_path}. Using default configurations or environment variables.")
 
@@ -28,8 +29,10 @@ if not os.path.isabs(VECTOR_DB_PATH):
 if not os.path.exists(os.path.dirname(VECTOR_DB_PATH)):
      os.makedirs(os.path.dirname(VECTOR_DB_PATH), exist_ok=True)
 
-# 嵌入模型配置
-EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
+# 嵌入模型配置 - 确保始终使用环境变量中的设置
+# 从环境变量中直接获取，不使用os.getenv，因为os.getenv会回退到默认值
+# 默认模型为 all-MiniLM-L6-v2
+EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
 print(f"[Config] Effective EMBEDDING_MODEL_NAME: {EMBEDDING_MODEL_NAME}") # 增加日志确认模型名称
 
 # 上传文件存储路径

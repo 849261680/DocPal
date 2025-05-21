@@ -64,11 +64,15 @@ async def options_route(rest_of_path: str):
 # 仍然保留原来的CORS中间件作为额外保障
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 允许所有源
-    allow_credentials=False,
-    allow_methods=["*"],  # 允许所有方法
-    allow_headers=["*"],  # 允许所有头
-    max_age=86400,
+    allow_origins=[
+        "https://enterprise-knowledge-hub.vercel.app", # Your Vercel frontend
+        "http://localhost:5173",                   # Common local dev (Vite)
+        "http://localhost:3000"                    # Common local dev (CRA)
+    ],
+    allow_credentials=False, # Keep as False as per previous setup
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], # Explicitly list methods
+    allow_headers=["*"],  # Allow all headers
+    max_age=86400
 )
 
 # 应用启动事件处理器

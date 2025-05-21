@@ -433,3 +433,33 @@ async def post_documents_route():
     获取已上传的所有文档列表（POST方法）
     """
     return await get_documents_route()
+# 添加清空所有文档的API端点
+@router.delete("/documents", response_model=dict)
+async def delete_all_documents_route(db: FAISSVectorStore = Depends(get_db)):
+    """
+    删除知识库中的所有文档，包括文件、元数据和向量存储中的数据
+    """
+    try:
+        # 1. 获取所有文档信息
+        documents = get_all_documents()
+        
+        # 2. 删除所有文件
+        for doc in documents:
+            if os.path.exists(doc.file_path):
+                try:
+                    os.remove(doc.file_path)
+                    print(f"已删除文件: {doc.file_path}")
+                except Exception as e:
+                    print(f"删除文件 {doc.file_path} 时出错: {e}")
+        
+        # 3. 清空元数据
+        clear_all_documents()
+        
+        # 4. 重置向量存储
+        db.reset_index()
+        
+        return {"status": "success", "message": "已成功删除所有文档"}
+    except Exception as e:
+        print(f"删除所有文档时出错: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"删除所有文档时发生错误: {str(e)}")

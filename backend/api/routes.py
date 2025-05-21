@@ -1,5 +1,5 @@
 # 路由注册 
-from fastapi import APIRouter, File, UploadFile, HTTPException, Body, Depends
+from fastapi import APIRouter, File, UploadFile, HTTPException, Body, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
 import traceback
 import os
@@ -15,7 +15,8 @@ from backend.api.models import (
     DocumentMetadata,
     DocumentListResponse,
     AskRequest,
-    AskResponse
+    AskResponse,
+    DocumentStatusResponse
 )
 from backend.services.document_loader import (
     load_document,
@@ -30,8 +31,23 @@ from backend.services.document_storage import (
     get_all_documents, 
     save_document_info, 
     delete_document,
-    clear_all_documents
+    clear_all_documents,
+    update_document_status,
+    get_document_info
 )
+
+# 直接在Python中定义ProcessingStatus枚举
+# 这样可以避免从 TypeScript 文件导入的问题
+from enum import Enum
+
+class ProcessingStatus(str, Enum):
+    PENDING = "pending"
+    EXTRACTING = "extracting"
+    CHUNKING = "chunking"
+    EMBEDDING = "embedding"
+    INDEXING = "indexing"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
 router = APIRouter()
 
@@ -57,9 +73,10 @@ def get_db() -> FAISSVectorStore:
     return get_vector_store()
 
 @router.post("/upload_doc/", response_model=UploadResponse)
-async def upload_document_route(file: UploadFile = File(...), db: FAISSVectorStore = Depends(get_db)):
+async def upload_document_route(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     """
-    处理文档上传，将其加载、分块、生成嵌入并存入 FAISS 索引。
+    处理文档上传，保存文件并在后台异步处理文档。
+    这样可以避免大型文件处理导致的HTTP请求超时问题。
     """
     if not file.filename:
         raise HTTPException(status_code=400, detail="文件名不能为空。")
@@ -74,69 +91,131 @@ async def upload_document_route(file: UploadFile = File(...), db: FAISSVectorSto
         print(f"成功读取文件内容，大小: {file_size} 字节")
         
         # 1. 保存原始文件
-        # 使用document_loader中的save_uploaded_file函数保存文件
         print(f"开始保存文件到磁盘...")
         saved_file_path = await save_uploaded_file(safe_filename, content)
         print(f"原始文件已保存到: {saved_file_path}")
 
-        # 2. 加载文档内容 (从已保存的文件)
-        # load_document 需要文件路径
-        print(f"开始加载文档内容...")
-        docs = load_document(saved_file_path)
-        if not docs:
-            message = f"无法加载或解析文件: {safe_filename}。可能是不支持的文件类型或文件已损坏。"
-            print(message)
-            # 即使加载失败，文件也已保存，所以返回成功状态但提示信息
-            return UploadResponse(status="warning", filename=safe_filename, message=message)
+        # 2. 创建文档记录，状态设为处理中
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        doc_info = DocumentInfo(
+            filename=safe_filename,
+            file_path=saved_file_path,
+            upload_time=current_time,
+            file_size=file_size,
+            status=ProcessingStatus.PENDING,
+            progress=0
+        )
+        save_document_info(doc_info)
+        print(f"已保存文件 {safe_filename} 的初始元数据信息")
+        
+        # 3. 添加后台任务处理文档
+        background_tasks.add_task(
+            process_document_async, 
+            saved_file_path, 
+            safe_filename
+        )
+        
+        # 4. 立即返回响应
+        return UploadResponse(
+            status="processing", 
+            filename=safe_filename,
+            message=f"文件 '{safe_filename}' 已接收，正在后台处理。请使用 /api/document_status/{safe_filename} 查询状态。"
+        )
+        
+    except Exception as e:
+        print(f"处理文件 {safe_filename} 时发生意外错误: {e}")
+        traceback.print_exc() 
+        raise HTTPException(status_code=500, detail=f"处理文件 '{safe_filename}' 时发生内部服务器错误: {str(e)}")
+    finally:
+        await file.close()
 
-        # 3. 分割文档
-        print(f"开始分割文档...")
+async def process_document_async(file_path: str, filename: str):
+    """
+    后台异步处理文档，包括加载、分块、生成嵌入并存入向量索引。
+    该函数由upload_document_route通过BackgroundTasks调用，不直接暴露为API。
+    """
+    try:
+        # 获取向量存储实例
+        db = get_vector_store()
+        
+        # 1. 更新状态为文档提取中
+        update_document_status(filename, ProcessingStatus.EXTRACTING, progress=10)
+        
+        # 2. 加载文档
+        docs = load_document(file_path)
+        if not docs:
+            update_document_status(
+                filename, 
+                ProcessingStatus.FAILED, 
+                progress=0, 
+                error="无法加载或解析文件，可能是不支持的文件类型或文件已损坏。"
+            )
+            return
+            
+        # 3. 更新状态为分块中
+        update_document_status(filename, ProcessingStatus.CHUNKING, progress=30)
+        
+        # 4. 分割文档
         chunks = split_documents(docs)
         if not chunks:
-            message = f"文件 {safe_filename} 未能分割成文本块 (可能为空文件或内容无法处理)。"
-            print(message)
-            return UploadResponse(status="warning", filename=safe_filename, message=message)
+            update_document_status(
+                filename, 
+                ProcessingStatus.FAILED, 
+                progress=0, 
+                error="文档分块失败，可能为空文件或内容无法处理。"
+            )
+            return
+            
+        # 5. 更新状态为嵌入生成中
+        update_document_status(filename, ProcessingStatus.EMBEDDING, progress=50)
         
-        # 4. 将分块添加到向量存储 (这会触发嵌入生成和 FAISS 索引更新)
-        print(f"准备将 {len(chunks)} 个文本块从文件 {safe_filename} 添加到向量数据库...")
+        # 6. 生成嵌入并添加到向量存储
         chunks_added_count = db.add_documents(chunks)
         
         if chunks_added_count > 0:
-            print(f"成功为文件 {safe_filename} 添加了 {chunks_added_count} 个文本块到向量数据库。")
-            
-            # 5. 保存文档元数据信息
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            doc_info = DocumentInfo(
-                filename=safe_filename,
-                file_path=saved_file_path,
-                upload_time=current_time,
-                file_size=file_size,
+            # 7. 更新状态为已完成
+            update_document_status(
+                filename, 
+                ProcessingStatus.COMPLETED, 
+                progress=100,
                 chunks_count=chunks_added_count
             )
-            save_document_info(doc_info)
-            print(f"已保存文件 {safe_filename} 的元数据信息")
-            
-            return UploadResponse(
-                status="success", 
-                filename=safe_filename, 
-                chunks_stored=chunks_added_count,
-                message=f"文件 '{safe_filename}' 处理成功并已添加到知识库。"
-            )
+            print(f"成功为文件 {filename} 添加了 {chunks_added_count} 个文本块到向量数据库。")
         else:
-            message = f"未能将文件 {safe_filename} 的文本块添加到向量数据库 (嵌入可能失败或块为空)。"
-            print(message)
-            return UploadResponse(status="error", filename=safe_filename, message=message)
-
-    except HTTPException as http_exc: # 重新抛出已知的 HTTP 异常
-        print(f"处理文件 {safe_filename} 时发生HTTP异常: {http_exc.detail}")
-        raise http_exc
+            update_document_status(
+                filename, 
+                ProcessingStatus.FAILED, 
+                progress=0, 
+                error="无法为文档块生成嵌入或添加到向量数据库。"
+            )
+            
     except Exception as e:
-        print(f"处理文件 {safe_filename} 时发生意外错误: {e}")
-        traceback.print_exc() # 打印完整的堆栈跟踪以供调试
-        # 对于未知错误，返回 500
-        raise HTTPException(status_code=500, detail=f"处理文件 '{safe_filename}' 时发生内部服务器错误。错误详情: {str(e)}")
-    finally:
-        await file.close()
+        print(f"后台处理文件 {filename} 时出错: {e}")
+        traceback.print_exc()
+        update_document_status(
+            filename, 
+            ProcessingStatus.FAILED, 
+            progress=0, 
+            error=f"处理错误: {str(e)}"
+        )
+
+@router.get("/document_status/{filename}", response_model=DocumentStatusResponse)
+async def get_document_status_route(filename: str):
+    """
+    获取文档处理状态
+    """
+    doc_info = get_document_info(filename)
+    if not doc_info:
+        raise HTTPException(status_code=404, detail=f"找不到文档: {filename}")
+    
+    return DocumentStatusResponse(
+        status="success",
+        filename=doc_info.filename,
+        processing_status=doc_info.status,
+        progress=doc_info.progress,
+        chunks_count=doc_info.chunks_count,
+        error=doc_info.error
+    )
 
 @router.post("/query", response_model=QueryResponse)
 async def query_route(request: QueryRequest = Body(...)):

@@ -23,9 +23,25 @@ export default function DocumentItem({ document }: DocumentItemProps) {
     
     try {
       setIsDeleting(true);
-      await apiRequest("DELETE", `documents/${document.filename}`, {});
-      queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/vector_store_size`] });
-      queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/documents`] });
+      // 使用getApiBaseUrl函数获取API基础URL
+      const baseApiUrl = getApiBaseUrl();
+      const deleteUrl = `${baseApiUrl}/api/documents/${document.filename}`;
+      const vectorSizeUrl = `${baseApiUrl}/api/vector_store_size`;
+      const documentsUrl = `${baseApiUrl}/api/documents`;
+      
+      console.log(`发送删除请求到: ${deleteUrl}`);
+      const response = await fetch(deleteUrl, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`删除请求失败: ${response.status}`);
+      }
+      
+      // 使用一致的URL来刷新查询
+      queryClient.invalidateQueries({ queryKey: [vectorSizeUrl] });
+      queryClient.invalidateQueries({ queryKey: [documentsUrl] });
+      console.log(`已发送删除请求: ${document.filename}`);
       toast({
         title: "文档已删除",
         description: `文档 ${document.filename} 已从知识库中删除。`,

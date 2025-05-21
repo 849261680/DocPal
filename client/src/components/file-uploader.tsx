@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -93,6 +93,9 @@ export default function FileUploader() {
     console.log("开始上传文件...");
     
     try {
+      // 获取API基础URL
+      const baseApiUrl = getApiBaseUrl();
+      
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
         console.log(`准备上传文件: ${file.name}, 大小: ${file.size} 字节, 类型: ${file.type}`);
@@ -111,14 +114,11 @@ export default function FileUploader() {
         const timeoutId = setTimeout(() => controller.abort(), 120000); // 2分钟超时
         
         try {
-          // 使用getApiBaseUrl函数获取后端URL
-          const backendUrl = `${getApiBaseUrl()}/api/upload_doc/`;
-          // 使用CORS代理
-          const proxiedUrl = useCorsProxy(backendUrl);
-            
-          console.log(`正在上传文件到: ${backendUrl}`, proxiedUrl !== backendUrl ? `(通过代理: ${proxiedUrl})` : '');
+          // 构建上传URL
+          const uploadUrl = `${baseApiUrl}/api/upload_doc/`;
+          console.log(`正在上传文件到: ${uploadUrl}`);
           
-          const response = await fetch(proxiedUrl, {
+          const response = await fetch(uploadUrl, {
             method: "POST",
             body: formData,
             credentials: 'omit', // 始终不发送凭据
@@ -130,45 +130,40 @@ export default function FileUploader() {
           if (!response.ok) {
             const errorText = await response.text();
             console.error(`上传失败: ${response.status} ${response.statusText}`, errorText);
-            throw new Error(errorText || `上传失败: ${response.status} ${response.statusText}`);
+            throw new Error(errorText || `上传失败: ${response.status}`);
           }
           
           const result = await response.json();
           console.log(`文件 ${file.name} 上传成功:`, result);
-        } catch (error) {
-          if (error.name === 'AbortError') {
-            console.error(`上传文件 ${file.name} 超时`);
-            throw new Error(`上传文件 ${file.name} 超时，请稍后重试`);
-          }
-          throw error;
+        } catch (fileError) {
+          // 处理单个文件上传错误
+          console.error(`文件 ${file.name} 上传失败:`, fileError);
+          throw fileError; // 继续向上抛出错误
         }
       }
       
-      // 刷新文档列表和向量库大小
+      // 所有文件上传成功后，刷新文档列表和向量库大小
       try {
-        const vectorSizeUrl = `${getApiBaseUrl()}/api/vector_store_size`;
-        const documentsUrl = `${getApiBaseUrl()}/api/documents`;
+        const documentsUrl = `${baseApiUrl}/api/documents`;
+        const vectorSizeUrl = `${baseApiUrl}/api/vector_store_size`;
         
-        // 使用代理URL
-        const proxiedVectorSizeUrl = useCorsProxy(vectorSizeUrl);
-        const proxiedDocumentsUrl = useCorsProxy(documentsUrl);
+        queryClient.invalidateQueries({ queryKey: [documentsUrl] });
+        queryClient.invalidateQueries({ queryKey: [vectorSizeUrl] });
         
-        queryClient.invalidateQueries({ queryKey: [proxiedVectorSizeUrl] });
-        queryClient.invalidateQueries({ queryKey: [proxiedDocumentsUrl] });
-        
-        console.log(`刷新文档列表: ${vectorSizeUrl}`, proxiedVectorSizeUrl !== vectorSizeUrl ? `(通过代理: ${proxiedVectorSizeUrl})` : '');
-        console.log(`刷新文档列表: ${documentsUrl}`, proxiedDocumentsUrl !== documentsUrl ? `(通过代理: ${proxiedDocumentsUrl})` : '');
-      } catch (error) {
-        console.error("刷新文档列表失败:", error);
+        console.log(`刷新文档列表: ${documentsUrl}`);
+        console.log(`刷新向量库信息: ${vectorSizeUrl}`);
+      } catch (refreshError) {
+        console.error("刷新文档列表失败:", refreshError);
+        // 不阻止上传成功的处理，只记录错误
       }
       
-      // Reset state
+      // 重置状态
       setSelectedFiles(null);
       if (inputRef.current) inputRef.current.value = "";
       
       toast({
         title: "上传成功",
-        description: `${selectedFiles.length > 1 ? "文档已" : "文档已"}上传并正在处理中。`
+        description: `文档已上传并正在处理中。`
       });
     } catch (error) {
       console.error("Upload error:", error);

@@ -77,15 +77,30 @@ export const api = {
   },
   
   async sendMessage(content: string): Promise<SendMessageResponse> {
-    const response = await apiRequest("POST", "query", { query: content });
+    // 使用getApiBaseUrl函数获取API基础URL
+    const baseApiUrl = getApiBaseUrl();
+    const queryUrl = `${baseApiUrl}/api/query`;
+    
+    console.log(`发送查询请求到: ${queryUrl}`);
+    const response = await fetch(queryUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: content })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`查询请求失败: ${response.status}`);
+    }
+    
     const data = await response.json();
+    console.log("查询响应:", data);
     
     // 创建并返回格式化的用户消息和助手消息
     const userMessage: Message = {
       id: Date.now(),
       content: content,
       isUser: true,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(), // 直接使用Date对象
       sources: null
     };
     
@@ -93,8 +108,8 @@ export const api = {
       id: Date.now() + 1,
       content: data.answer || "抱歉，我无法找到相关答案。",
       isUser: false,
-      timestamp: new Date().toISOString(),
-      sources: data.sources ? data.sources.map(src => ({
+      timestamp: new Date(), // 直接使用Date对象
+      sources: data.sources ? data.sources.map((src: { filename?: string; page_content?: string; metadata?: { page?: number } }) => ({
         documentName: src.filename || "未知文档",
         text: src.page_content || "",
         page: src.metadata?.page || null

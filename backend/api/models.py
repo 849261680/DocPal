@@ -4,10 +4,18 @@ from typing import List, Optional
 from datetime import datetime
 
 class UploadResponse(BaseModel):
-    status: str
+    status: str  # 'success', 'processing', 'warning', 'error'
     filename: str
     chunks_stored: Optional[int] = None
     message: Optional[str] = None
+
+class DocumentStatusResponse(BaseModel):
+    status: str  # API调用状态: 'success' 或 'error'
+    filename: str
+    processing_status: str  # 文档处理状态: pending, extracting, chunking, embedding, indexing, completed, failed
+    progress: int = 0  # 处理进度 0-100
+    chunks_count: Optional[int] = None  # 已处理的块数
+    error: Optional[str] = None  # 如果失败，包含错误信息
 
 class QueryRequest(BaseModel):
     query: str

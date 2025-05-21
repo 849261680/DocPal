@@ -17,13 +17,18 @@ const useCorsProxy = (url: string) => {
 };
 
 export function useDocuments() {
+  // 使用getApiBaseUrl获取API基础URL
   const baseApiUrl = getApiBaseUrl();
   const vectorSizeUrl = `${baseApiUrl}/api/vector_store_size`;
   const documentsUrl = `${baseApiUrl}/api/documents`;
   
-  // 使用代理URL
-  const proxiedVectorSizeUrl = useCorsProxy(vectorSizeUrl);
-  const proxiedDocumentsUrl = useCorsProxy(documentsUrl);
+  console.log(`API基础URL: ${baseApiUrl}`);
+  console.log(`向量存储大小URL: ${vectorSizeUrl}`);
+  console.log(`文档列表URL: ${documentsUrl}`);
+  
+  // 不使用代理URL
+  const proxiedVectorSizeUrl = vectorSizeUrl;
+  const proxiedDocumentsUrl = documentsUrl;
   
   // 获取向量库大小
   const { 
@@ -45,9 +50,20 @@ export function useDocuments() {
     queryKey: [proxiedDocumentsUrl]
   });
   
+  // 生成一个简单的哈希函数来将字符串转为整数
+  const simpleHash = (str: string): number => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+  };
+
   // 将文档数据转换为Document类型数组
   const documents: Document[] = ((documentData as { documents: Array<{ filename: string; file_size: number; upload_time: string; chunks_count: number }> }).documents || []).map((doc) => ({
-    id: 0, // 这里应该有一个真实的ID，或者从后端获取
+    id: simpleHash(doc.filename), // 将文件名转换为哈希数字作为唯一ID
     filename: doc.filename,
     filesize: doc.file_size,
     filetype: doc.filename.split('.').pop() || '',

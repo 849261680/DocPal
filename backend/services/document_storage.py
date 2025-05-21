@@ -14,12 +14,18 @@ class DocumentInfo:
                  file_path: str, 
                  upload_time: str,
                  file_size: int,
-                 chunks_count: int = 0):
+                 chunks_count: int = 0,
+                 status: str = "pending",
+                 progress: int = 0,
+                 error: str = None):
         self.filename = filename
         self.file_path = file_path
         self.upload_time = upload_time
         self.file_size = file_size
         self.chunks_count = chunks_count
+        self.status = status
+        self.progress = progress
+        self.error = error
     
     def to_dict(self) -> Dict:
         return {
@@ -27,7 +33,10 @@ class DocumentInfo:
             "file_path": self.file_path,
             "upload_time": self.upload_time,
             "file_size": self.file_size,
-            "chunks_count": self.chunks_count
+            "chunks_count": self.chunks_count,
+            "status": self.status,
+            "progress": self.progress,
+            "error": self.error
         }
     
     @classmethod
@@ -37,7 +46,10 @@ class DocumentInfo:
             file_path=data["file_path"],
             upload_time=data["upload_time"],
             file_size=data["file_size"],
-            chunks_count=data["chunks_count"]
+            chunks_count=data.get("chunks_count", 0),
+            status=data.get("status", "pending"),
+            progress=data.get("progress", 0),
+            error=data.get("error", None)
         )
 
 def _ensure_metadata_file():
@@ -108,3 +120,47 @@ def clear_all_documents() -> bool:
     except Exception as e:
         print(f"清除文档元数据时出错: {e}")
         return False 
+
+def update_document_status(filename: str, status: str, progress: int = None, chunks_count: int = None, error: str = None) -> bool:
+    """更新文档处理状态"""
+    try:
+        documents = get_all_documents()
+        found = False
+        
+        for doc in documents:
+            if doc.filename == filename:
+                doc.status = status
+                if progress is not None:
+                    doc.progress = progress
+                if chunks_count is not None:
+                    doc.chunks_count = chunks_count
+                if error is not None:
+                    doc.error = error
+                found = True
+                break
+        
+        if not found:
+            print(f"未找到要更新状态的文档: {filename}")
+            return False
+        
+        # 保存更新后的文档列表
+        with open(DOCUMENT_METADATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump([doc.to_dict() for doc in documents], f, ensure_ascii=False, indent=2)
+        
+        print(f"已更新文档 {filename} 的状态为: {status}")
+        return True
+    except Exception as e:
+        print(f"更新文档状态时出错: {e}")
+        return False
+
+def get_document_info(filename: str) -> Optional[DocumentInfo]:
+    """获取指定文档的信息"""
+    try:
+        documents = get_all_documents()
+        for doc in documents:
+            if doc.filename == filename:
+                return doc
+        return None
+    except Exception as e:
+        print(f"获取文档信息时出错: {e}")
+        return None

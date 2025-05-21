@@ -28,7 +28,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="text-base font-medium text-neutral-600 hover:text-primary transition-colors"
             >
-              关于我
+              关于作者
             </a>
           </div>
         </div>

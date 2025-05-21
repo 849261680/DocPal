@@ -75,7 +75,8 @@ class DeepSeekEmbeddingSingleton:
         
         try:
             # 准备DeepSeek API请求
-            url = f"{DEEPSEEK_API_BASE_URL}/v1/embeddings"
+            # 注意: DeepSeek API用的端点是/embeddings (v1前缀已经在基本URL中包含)
+            url = f"{DEEPSEEK_API_BASE_URL}/embeddings"
             headers = {
                 "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
                 "Content-Type": "application/json"

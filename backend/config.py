@@ -65,3 +65,8 @@ else:
 
 if not COHERE_API_BASE_URL:
     print("警告: COHERE_API_BASE_URL 未设置，使用默认值: https://api.cohere.ai")
+# 兼容性配置: 设置与DeepSeek API变量的兼容性
+# 这些变量用于支持仍然在使用DeepSeek变量的代码
+DEEPSEEK_API_KEY = COHERE_API_KEY
+DEEPSEEK_API_BASE_URL = COHERE_API_BASE_URL
+CHAT_MODEL = os.getenv("CHAT_MODEL", "command")  # 使用Cohere的command模型作为默认聊天模型

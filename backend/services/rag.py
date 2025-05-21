@@ -6,8 +6,8 @@ from typing import List, Tuple, Dict, Any, Optional
 try:
     # 本地开发环境
     from backend.config import (
-        DEEPSEEK_API_KEY,
-        DEEPSEEK_API_BASE_URL,
+        COHERE_API_KEY,
+        COHERE_API_BASE_URL,
         CHAT_MODEL,
         TOP_K_RESULTS
     )
@@ -16,8 +16,8 @@ try:
 except ModuleNotFoundError:
     # Railway部署环境
     from config import (
-        DEEPSEEK_API_KEY,
-        DEEPSEEK_API_BASE_URL,
+        COHERE_API_KEY,
+        COHERE_API_BASE_URL,
         CHAT_MODEL,
         TOP_K_RESULTS
     )
@@ -27,15 +27,15 @@ except ModuleNotFoundError:
 async def generate_answer_from_llm(
     query: str,
     context_chunks: List[LangchainDocument],
-    api_key: str = DEEPSEEK_API_KEY,
-    base_url: str = DEEPSEEK_API_BASE_URL,
+    api_key: str = COHERE_API_KEY,
+    base_url: str = COHERE_API_BASE_URL,
     chat_model: str = CHAT_MODEL
 ) -> Optional[Dict[str, Any]]:
     """
-    使用提供的上下文块和用户查询，调用 DeepSeek Chat API 生成答案。
+    使用提供的上下文块和用户查询，调用 Cohere API 生成答案。
     """
     if not api_key:
-        print("错误: DeepSeek API Key 未配置。")
+        print("错误: Cohere API Key 未配置。")
         return None
     
     if not context_chunks:
@@ -72,30 +72,10 @@ async def generate_answer_from_llm(
         "max_tokens": 1500  # 可以根据需要调整
     }
 
-    # DeepSeek API 通常在 /v1/chat/completions
-    # 确保 base_url 是类似 https://api.deepseek.com 这样的，然后拼接 /v1/chat/completions
-    # 如果 base_url 已经包含了 /v1，则不需要再添加
-    if not base_url.endswith('/v1') and not base_url.endswith('/v1/'):
-        api_endpoint = f"{base_url.rstrip('/')}/v1/chat/completions"
-    else:
-        api_endpoint = f"{base_url.rstrip('/')}/chat/completions" 
-        # 如果 DEEPSEEK_API_BASE_URL 本身就是 https://api.deepseek.com/v1, 则上面的判断可能需要调整
-        # 更稳妥的做法是让用户在 .env 中配置完整的 DEEPSEEK_CHAT_API_URL
-        # 例如 DEEPSEEK_CHAT_API_URL=https://api.deepseek.com/v1/chat/completions
-        # 此处暂时按照文档中 base_url + /v1/chat/completions 的方式构建
-        # 根据 DeepSeek 的文档，如果是 OpenAI 兼容模式，应该是 base_url (https://api.deepseek.com) + /v1/chat/completions
-        # 如果 DEEPSEEK_API_BASE_URL = https://api.deepseek.com, 那么这里应该拼接 /v1/chat/completions
+    # Cohere API 标准端点
+    api_endpoint = f"{base_url.rstrip('/')}/v1/chat"
 
-    # 修正 endpoint 逻辑
-    if "/chat/completions" not in base_url:
-        if base_url.endswith("/v1") or base_url.endswith("/v1/"):
-             api_endpoint = f"{base_url.rstrip('/')}/chat/completions"
-        else:
-             api_endpoint = f"{base_url.rstrip('/')}/v1/chat/completions"
-    else:
-        api_endpoint = base_url # 假设 base_url 已经是完整的 chat completions endpoint
-
-    print(f"向 DeepSeek API ({api_endpoint}) 发送请求...")
+    print(f"向 Cohere API ({api_endpoint}) 发送请求...")
     print(f"Prompt (部分): {prompt[:200]}...")
 
     async with httpx.AsyncClient(timeout=60.0) as client: # 设置超时时间
@@ -104,25 +84,25 @@ async def generate_answer_from_llm(
             response.raise_for_status()  # 如果是 4xx 或 5xx 错误，则抛出 HTTPError
             
             api_response = response.json()
-            print(f"DeepSeek API 原始响应 (部分): {str(api_response)[:200]}...")
+            print(f"Cohere API 原始响应 (部分): {str(api_response)[:200]}...")
 
-            if api_response.get("choices") and len(api_response["choices"]) > 0:
-                answer = api_response["choices"][0]["message"]["content"]
+            if api_response.get("generations") and len(api_response["generations"]) > 0:
+                answer = api_response["generations"][0]["text"]
                 return {"answer": answer.strip(), "raw_response": api_response}
             else:
                 error_message = api_response.get("error", {}).get("message", "未知错误或空响应")
-                print(f"DeepSeek API 返回错误或空响应: {error_message}")
+                print(f"Cohere API 返回错误或空响应: {error_message}")
                 print(f"完整响应: {api_response}")
                 return {"answer": f"抱歉，调用语言模型时出错: {error_message}", "raw_response": api_response}
         
         except httpx.HTTPStatusError as e:
-            print(f"DeepSeek API 请求失败，状态码: {e.response.status_code}, 响应: {e.response.text}")
+            print(f"Cohere API 请求失败，状态码: {e.response.status_code}, 响应: {e.response.text}")
             return {"answer": f"抱歉，与语言模型通信时出错 (HTTP {e.response.status_code})。", "raw_response": e.response.text}
         except httpx.RequestError as e:
-            print(f"DeepSeek API 请求失败: {e}")
+            print(f"Cohere API 请求失败: {e}")
             return {"answer": f"抱歉，与语言模型通信时发生网络错误。", "raw_response": str(e)}
         except Exception as e:
-            print(f"处理 DeepSeek API 响应时发生未知错误: {e}")
+            print(f"处理 Cohere API 响应时发生未知错误: {e}")
             return {"answer": f"抱歉，处理语言模型响应时发生未知错误。", "raw_response": str(e)}
 
 

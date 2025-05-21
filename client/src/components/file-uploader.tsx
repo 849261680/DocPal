@@ -9,15 +9,15 @@ import { Upload, CheckCircle, Loader2 } from "lucide-react";
 const useCorsProxy = (url: string) => {
   // 只为render.com域名使用代理
   if (url.includes('enterprise-knowledge-hub-backend.onrender.com') || url.includes('render.com')) {
-    // 使用corsproxy.io服务
-    return `https://corsproxy.io/?${encodeURIComponent(url)}`;
+    // 使用allorigins.win作为代理服务
+    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
   }
   return url;
 };
 
 // 检查URL是否使用了代理
 const isProxiedUrl = (url: string) => {
-  return url.includes('corsproxy.io');
+  return url.includes('allorigins.win');
 };
 
 export default function FileUploader() {

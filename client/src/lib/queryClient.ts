@@ -26,15 +26,20 @@ async function throwIfResNotOk(res: Response) {
 const useCorsProxy = (url: string) => {
   // 只为render.com域名使用代理
   if (url.includes('enterprise-knowledge-hub-backend.onrender.com') || url.includes('render.com')) {
-    // 使用corsproxy.io服务
-    return `https://corsproxy.io/?${encodeURIComponent(url)}`;
+    // 尝试使用多种CORS代理服务，如果一个失败可以尝试另一个
+    // 使用CORS Anywhere作为第一选择
+    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    // 备选代理1
+    // return `https://cors-anywhere.herokuapp.com/${url}`;
+    // 备选代理2
+    // return `https://cors.eu.org/${url}`;
   }
   return url;
 };
 
 // 检查URL是否使用了代理
 const isProxiedUrl = (url: string) => {
-  return url.includes('corsproxy.io');
+  return url.includes('allorigins.win') || url.includes('cors-anywhere.herokuapp.com') || url.includes('cors.eu.org');
 };
 
 export async function apiRequest(

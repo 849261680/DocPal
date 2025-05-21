@@ -49,12 +49,12 @@ export interface DocumentListResponse {
 export const api = {
   // Document endpoints
   async getVectorStoreSize(): Promise<VectorStoreSize> {
-    const response = await apiRequest("POST", "vector_store_size", undefined);
+    const response = await apiRequest("GET", "vector_store_size", undefined, 3);
     return response.json();
   },
   
   async getDocuments(): Promise<DocumentListResponse> {
-    const response = await apiRequest("POST", "documents", undefined);
+    const response = await apiRequest("GET", "documents", undefined, 3);
     return response.json();
   },
   

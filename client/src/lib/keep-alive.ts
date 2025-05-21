@@ -1,7 +1,7 @@
 import { getApiBaseUrl } from './queryClient';
 
-// 保活间隔时间 - 设为14分钟 (Render休眠时间为15分钟)
-const KEEP_ALIVE_INTERVAL = 14 * 60 * 1000; // 14分钟
+// 保活间隔时间 - 设为5分钟 (Render休眠时间为15分钟，设置更短的间隔以确保可靠性)
+const KEEP_ALIVE_INTERVAL = 5 * 60 * 1000; // 5分钟
 
 /**
  * 保活服务 - 定期ping后端以防止Render免费tier休眠

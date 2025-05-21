@@ -46,10 +46,14 @@ const isProxiedUrl = (url: string) => {
   return url.includes('allorigins.win') || url.includes('cors-anywhere.herokuapp.com') || url.includes('cors.eu.org');
 };
 
+// 睡眠辅助函数
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export async function apiRequest(
   method: string,
   url: string, // 这个url应该是类似 'vector_store_size' 或 'documents' 这样的相对路径
   data?: unknown | undefined,
+  maxRetries: number = 3, // 最大重试次数，默认为3次
 ): Promise<Response> {
   const baseUrl = getApiBaseUrl();
   // 确保基础URL存在且不为空，或者URL已经是完整的HTTP(S)链接
@@ -61,51 +65,88 @@ export async function apiRequest(
   const proxiedUrl = useCorsProxy(fullUrl);
   console.log(`发送请求到: ${fullUrl}`, proxiedUrl !== fullUrl ? `(通过代理: ${proxiedUrl})` : '');
   
-  const res = await fetch(proxiedUrl, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "omit", // 始终不发送凭据
-  });
-
-  await throwIfResNotOk(res);
-  return res;
+  let lastError: Error | null = null;
+  
+  // 重试循环
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(proxiedUrl, {
+        method,
+        headers: data ? { "Content-Type": "application/json" } : {},
+        body: data ? JSON.stringify(data) : undefined,
+        credentials: "omit", // 始终不发送凭据
+      });
+      
+      // 专门处理503错误（服务不可用，可能是Render休眠导致）
+      if (res.status === 503) {
+        if (attempt < maxRetries) {
+          // 如果遇到503且还有重试机会，则等待1秒后重试
+          console.warn(`服务不可用(503)，正在第${attempt + 1}次重试(共${maxRetries}次)...`);
+          await sleep(1000); // 等待1秒
+          continue; // 继续下一次重试
+        }
+      }
+      
+      // 对于非503错误或已达到最大重试次数的503错误，抛出错误
+      await throwIfResNotOk(res);
+      return res;
+    } catch (err) {
+      lastError = err as Error;
+      
+      // 如果已经是最后一次尝试，则抛出错误
+      if (attempt >= maxRetries) {
+        throw lastError;
+      }
+      
+      // 否则等待1秒后重试
+      console.warn(`请求失败，正在第${attempt + 1}次重试(共${maxRetries}次)...错误：${lastError.message}`);
+      await sleep(1000);
+    }
+  }
+  
+  // 这里不应该到达，但为了TS类型检查，添加这个抛出
+  throw new Error("重试失败");
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
+  method?: string; // 添加method参数以支持自定义HTTP方法
 }) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
+  ({ on401: unauthorizedBehavior, method = "GET" }) => // 默认使用GET而不POST
   async ({ queryKey }) => {
     const fullUrl = queryKey[0] as string; // queryKey[0] 已经是完整的 URL
 
-    console.log(`查询请求: ${fullUrl}`);
+    console.log(`查询请求: ${fullUrl} (方法: ${method})`);
     
-    const res = await fetch(fullUrl, {
-      method: "POST", // 使用POST方法而不是默认的GET
-      credentials: "omit", // 始终不发送凭据
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    try {
+      // 使用apiRequest函数代替fetch，这样可以利用我们的重试机制
+      const res = await apiRequest(method, fullUrl, undefined);
+      
+      // 401处理
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+      
+      return await res.json();
+    } catch (error) {
+      console.error(`查询请求失败: ${error}`);
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      queryFn: getQueryFn({ on401: "throw", method: "GET" }), // 明确使用GET方法
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      retry: 3, // 启用最多3次重试
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // 指数退避
     },
     mutations: {
-      retry: false,
+      retry: 2, // 也为编写启用重试
     },
   },
 });

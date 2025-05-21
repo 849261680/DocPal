@@ -31,19 +31,44 @@ app = FastAPI(
     description="基于 FastAPI 的 RAG 企业知识库问答系统后端 API"
 )
 
-# CORS (Cross-Origin Resource Sharing) 中间件配置
-# 直接允许所有源访问，解决Render上的CORS问题
-print("启用全开放CORS配置以解决Render部署问题")
+# 更直接的CORS处理方式，通过自定义中间件为所有响应添加CORS头
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.responses import JSONResponse
+from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.responses import Response
 
-# 添加更简单的CORS中间件
-# 使用通配符允许所有源访问，解决部署问题
+print("启用手动CORS头设置以解决Render部署问题")
+
+# 手动添加CORS头的中间件
+@app.middleware("http")
+async def add_cors_headers(request, call_next):
+    response = await call_next(request)
+    # 直接为所有响应添加CORS头
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
+
+# 处理OPTIONS请求，即预检请求
+@app.options("/{rest_of_path:path}")
+async def options_route(rest_of_path: str):
+    response = Response(
+        content="",
+        status_code=200,
+    )
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
+
+# 仍然保留原来的CORS中间件作为额外保障
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # 允许所有源
     allow_credentials=False,
     allow_methods=["*"],  # 允许所有方法
     allow_headers=["*"],  # 允许所有头
-    max_age=86400,  # 预检请求的缓存时间 (24小时)
+    max_age=86400,
 )
 
 # 应用启动事件处理器

@@ -58,7 +58,10 @@ TOP_K_RESULTS = int(os.getenv("TOP_K_RESULTS", "3"))
 
 # 检查关键配置是否存在
 if not COHERE_API_KEY:
-    raise ValueError("COHERE_API_KEY 未在环境变量中设置。请在 .env 文件中配置。")
+    print("警告: COHERE_API_KEY 未在环境变量中设置。部分功能可能无法正常工作。")
+    print("请在 Railway 项目设置中添加 COHERE_API_KEY 环境变量。")
+else:
+    print(f"[Config] Cohere API 配置已加载。使用模型: {COHERE_EMBEDDING_MODEL}")
 
 if not COHERE_API_BASE_URL:
-    raise ValueError("COHERE_API_BASE_URL 未在环境变量中设置。请在 .env 文件中配置。") 
+    print("警告: COHERE_API_BASE_URL 未设置，使用默认值: https://api.cohere.ai")

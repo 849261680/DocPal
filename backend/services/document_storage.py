@@ -175,3 +175,21 @@ def get_document_info(filename: str) -> Optional[DocumentInfo]:
     except Exception as e:
         print(f"获取文档信息时出错: {e}")
         return None
+
+def get_document_status(filename: str) -> Optional[Dict]:
+    """获取文档处理状态
+    
+    返回包含 status, progress 和 error 信息的字典
+    """
+    try:
+        doc_info = get_document_info(filename)
+        if doc_info:
+            return {
+                "status": doc_info.status,
+                "progress": doc_info.progress,
+                "error": doc_info.error
+            }
+        return None
+    except Exception as e:
+        print(f"获取文档状态时出错: {e}")
+        return None

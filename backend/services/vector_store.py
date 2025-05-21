@@ -39,25 +39,53 @@ class FAISSVectorStore:
             self._initialize_empty_index()
 
     def _initialize_empty_index(self):
-        try:
-            # 直接从 embedding 模块获取维度
-            dimension = get_embedding_dimension()
-            if dimension is None:
-                # 如果维度获取失败 (可能因为模型加载失败)
-                print("错误: 无法从嵌入模块获取模型维度。FAISS 索引初始化失败。")
-                # 触发 embedding 模块中的模型加载，这应该会设置维度或抛出异常
-                # get_embedding_model() # 确保模型尝试加载
-                # dimension = get_embedding_dimension() # 再次尝试获取
-                # if dimension is None:
-                raise RuntimeError("无法获取嵌入模型维度，FAISS 索引初始化失败。检查嵌入模型加载日志。")
-            
-            self.index = faiss.IndexFlatL2(dimension)
-            self.document_chunks = []
-            print(f"新的 FAISS 索引已初始化，维度: {dimension}。")
-        except Exception as e:
-            # 捕获 get_embedding_dimension() 可能由于模型加载失败而间接引发的 RuntimeError
-            print(f"初始化空 FAISS 索引失败: {e}")
-            raise RuntimeError(f"无法初始化 FAISS 索引: {e}")
+        # 增加重试次数
+        max_retries = 3
+        retry_delay = 2  # 秒
+        
+        for attempt in range(max_retries):
+            try:
+                # 第一步：尝试获取嵌入维度
+                dimension = get_embedding_dimension()
+                
+                # 如果获取失败，尝试显式加载模型
+                if dimension is None:
+                    print(f"尝试 {attempt+1}/{max_retries}: 无法获取嵌入维度，尝试显式加载模型...")
+                    try:
+                        # 显式触发模型加载
+                        get_embedding_model()
+                        # 再次尝试获取维度
+                        dimension = get_embedding_dimension()
+                    except Exception as model_error:
+                        print(f"模型加载失败: {model_error}")
+                        # 继续外部异常处理流程
+                        raise
+                
+                # 再次检查维度
+                if dimension is None:
+                    if attempt < max_retries - 1:
+                        print(f"尝试 {attempt+1}/{max_retries}: 维度仍为空，等待 {retry_delay} 秒后重试...")
+                        import time
+                        time.sleep(retry_delay)
+                        continue
+                    else:
+                        raise RuntimeError(f"经过 {max_retries} 次尝试，仍无法获取嵌入模型维度")
+                
+                # 成功获取维度，初始化索引
+                self.index = faiss.IndexFlatL2(dimension)
+                self.document_chunks = []
+                print(f"新的 FAISS 索引已初始化，维度: {dimension}。")
+                return  # 成功初始化，返回
+                
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"尝试 {attempt+1}/{max_retries}: 初始化索引失败: {e}，将重试...")
+                    import time
+                    time.sleep(retry_delay)
+                else:
+                    print(f"初始化空 FAISS 索引失败 (已尝试 {max_retries} 次): {e}")
+                    # 在最后一次尝试失败后抛出异常
+                    raise RuntimeError(f"无法初始化 FAISS 索引: {e}")
 
     def save_index(self):
         if self.index is not None:
@@ -147,9 +175,23 @@ class FAISSVectorStore:
 _vector_store_instance: Optional[FAISSVectorStore] = None
 
 def get_vector_store() -> FAISSVectorStore:
+    """
+    获取向量存储单例实例，包含错误处理和重试逻辑
+    """
     global _vector_store_instance
     if _vector_store_instance is None:
-        _vector_store_instance = FAISSVectorStore()
+        # 添加异常处理
+        try:
+            print("正在初始化向量存储实例...")
+            _vector_store_instance = FAISSVectorStore()
+            print("向量存储实例初始化成功")
+        except Exception as e:
+            print(f"向量存储实例初始化失败: {e}")
+            # 记录全堆栈异常信息
+            import traceback
+            traceback.print_exc()
+            # 允许继续抛出异常，调用者需要妥善处理
+            raise
     return _vector_store_instance
 
 # 可以在模块加载时尝试初始化，以便尽早发现问题

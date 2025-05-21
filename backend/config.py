@@ -11,12 +11,12 @@ if os.path.exists(dotenv_path):
 else:
     print(f"[Config] .env file not found at: {dotenv_path}. Using default configurations or environment variables.")
 
-# DeepSeek API 配置 (不再使用)
-# DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-# DEEPSEEK_API_BASE_URL = os.getenv("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com")
-# CHAT_MODEL = os.getenv("CHAT_MODEL", "deepseek-chat")
+# DeepSeek API 配置（用于聊天/大语言模型）
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+DEEPSEEK_API_BASE_URL = os.getenv("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com")
+CHAT_MODEL = os.getenv("CHAT_MODEL", "deepseek-chat")
 
-# Cohere API 配置
+# Cohere API 配置（用于嵌入向量）
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 COHERE_API_BASE_URL = os.getenv("COHERE_API_BASE_URL", "https://api.cohere.ai")
 COHERE_EMBEDDING_MODEL = os.getenv("COHERE_EMBEDDING_MODEL", "embed-multilingual-v3.0")  # 多语言模型支持中文
@@ -49,24 +49,11 @@ if not os.path.isabs(UPLOAD_DIR):
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# 文本分块配置
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
+# 文件上传限制配置
+MAX_UPLOAD_SIZE_MB = float(os.getenv("MAX_UPLOAD_SIZE_MB", 50))  # 默认限制每个文件最大为 50 MB
+print(f"[Config] MAX_UPLOAD_SIZE_MB: {MAX_UPLOAD_SIZE_MB}")
 
 # RAG 配置
-TOP_K_RESULTS = int(os.getenv("TOP_K_RESULTS", "3"))
-
-# 检查关键配置是否存在
-if not COHERE_API_KEY:
-    print("警告: COHERE_API_KEY 未在环境变量中设置。部分功能可能无法正常工作。")
-    print("请在 Railway 项目设置中添加 COHERE_API_KEY 环境变量。")
-else:
-    print(f"[Config] Cohere API 配置已加载。使用模型: {COHERE_EMBEDDING_MODEL}")
-
-if not COHERE_API_BASE_URL:
-    print("警告: COHERE_API_BASE_URL 未设置，使用默认值: https://api.cohere.ai")
-# 兼容性配置: 设置与DeepSeek API变量的兼容性
-# 这些变量用于支持仍然在使用DeepSeek变量的代码
-DEEPSEEK_API_KEY = COHERE_API_KEY
-DEEPSEEK_API_BASE_URL = COHERE_API_BASE_URL
-CHAT_MODEL = os.getenv("CHAT_MODEL", "command")  # 使用Cohere的command模型作为默认聊天模型
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 800))  # 默认块大小为1000
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 200))  # 默认块重叠为200
+TOP_K_RESULTS = int(os.getenv("TOP_K_RESULTS", 5))  # 检索时默认返回前5个相关结果

@@ -6,8 +6,8 @@ from typing import List, Tuple, Dict, Any, Optional
 try:
     # 本地开发环境
     from backend.config import (
-        COHERE_API_KEY,
-        COHERE_API_BASE_URL,
+        DEEPSEEK_API_KEY,
+        DEEPSEEK_API_BASE_URL,
         CHAT_MODEL,
         TOP_K_RESULTS
     )
@@ -16,8 +16,8 @@ try:
 except ModuleNotFoundError:
     # Railway部署环境
     from config import (
-        COHERE_API_KEY,
-        COHERE_API_BASE_URL,
+        DEEPSEEK_API_KEY,
+        DEEPSEEK_API_BASE_URL,
         CHAT_MODEL,
         TOP_K_RESULTS
     )
@@ -27,15 +27,15 @@ except ModuleNotFoundError:
 async def generate_answer_from_llm(
     query: str,
     context_chunks: List[LangchainDocument],
-    api_key: str = COHERE_API_KEY,
-    base_url: str = COHERE_API_BASE_URL,
+    api_key: str = DEEPSEEK_API_KEY,
+    base_url: str = DEEPSEEK_API_BASE_URL,
     chat_model: str = CHAT_MODEL
 ) -> Optional[Dict[str, Any]]:
     """
-    使用提供的上下文块和用户查询，调用 Cohere API 生成答案。
+    使用提供的上下文块和用户查询，调用 DeepSeek API 生成答案。
     """
     if not api_key:
-        print("错误: Cohere API Key 未配置。")
+        print("错误: DeepSeek API Key 未配置。")
         return None
     
     if not context_chunks:
@@ -45,39 +45,39 @@ async def generate_answer_from_llm(
 
     context_str = "\n\n---\n\n".join([doc.page_content for doc in context_chunks])
     
-    # 系统消息和用户消息
-    system_message = "你是一个基于用户提供文档的智能问答助手。请根据文档内容回答问题，如果文档中没有相关信息，请如实告知。"
-    
-    # 用户消息包含上下文和问题
-    user_message = f"""基于以下提供的上下文信息，请用中文回答用户的问题。
+    prompt = f"""基于以下提供的上下文信息，请用中文回答用户的问题。
 如果上下文中没有足够的信息来回答问题，请明确说明上下文中没有找到相关答案，不要编造。
 
 上下文信息:
 {context_str}
 
-用户问题: {query}"""
+用户问题: {query}
+
+回答:"""
+
+    messages = [
+        {"role": "system", "content": "你是一个基于用户提供文档的智能问答助手。请根据文档内容回答问题，如果文档中没有相关信息，请如实告知。"},
+        {"role": "user", "content": prompt}
+    ]
 
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
 
-    # 根据Cohere API文档格式化请求
-    # https://docs.cohere.com/reference/chat
     payload = {
         "model": chat_model,
-        "message": user_message,  # Cohere要求提供message字段
-        "preamble": system_message,  # 系统消息在Cohere API中使用preamble字段
+        "messages": messages,
         "temperature": 0.7,
         "max_tokens": 1500
     }
 
-    # Cohere API 标准端点
-    api_endpoint = f"{base_url.rstrip('/')}/v1/chat"
+    # DeepSeek API 端点
+    api_endpoint = f"{base_url.rstrip('/')}/v1/chat/completions"
 
-    print(f"向 Cohere API ({api_endpoint}) 发送请求...")
+    print(f"向 DeepSeek API ({api_endpoint}) 发送请求...")
     print(f"使用模型: {chat_model}")
-    print(f"用户消息 (部分): {user_message[:200]}...")
+    print(f"Prompt (部分): {prompt[:200]}...")
 
     async with httpx.AsyncClient(timeout=60.0) as client: # 设置超时时间
         try:
@@ -85,25 +85,24 @@ async def generate_answer_from_llm(
             response.raise_for_status()  # 如果是 4xx 或 5xx 错误，则抛出 HTTPError
             
             api_response = response.json()
-            print(f"Cohere API 响应状态: 成功")
+            print(f"DeepSeek API 响应状态: 成功")
             
-            # 检查响应格式并提取回答
-            # Cohere的响应格式: https://docs.cohere.com/reference/chat-response
-            if "text" in api_response:
-                answer = api_response["text"]
+            # 检查OpenAI格式的响应
+            if "choices" in api_response and len(api_response["choices"]) > 0:
+                answer = api_response["choices"][0]["message"]["content"]
                 return {"answer": answer.strip(), "raw_response": api_response}
             else:
-                print(f"Cohere API 返回了意外的响应格式: {api_response}")
+                print(f"DeepSeek API 返回了意外的响应格式: {api_response}")
                 return {"answer": "抱歉，处理模型响应时遇到格式问题。", "raw_response": api_response}
         
         except httpx.HTTPStatusError as e:
-            print(f"Cohere API 请求失败，状态码: {e.response.status_code}, 响应: {e.response.text}")
+            print(f"DeepSeek API 请求失败，状态码: {e.response.status_code}, 响应: {e.response.text}")
             return {"answer": f"抱歉，与语言模型通信时出错 (HTTP {e.response.status_code})。", "raw_response": e.response.text}
         except httpx.RequestError as e:
-            print(f"Cohere API 请求失败: {e}")
+            print(f"DeepSeek API 请求失败: {e}")
             return {"answer": f"抱歉，与语言模型通信时发生网络错误。", "raw_response": str(e)}
         except Exception as e:
-            print(f"处理 Cohere API 响应时发生未知错误: {e}")
+            print(f"处理 DeepSeek API 响应时发生未知错误: {e}")
             return {"answer": f"抱歉，处理语言模型响应时发生未知错误。", "raw_response": str(e)}
 
 

@@ -6,8 +6,14 @@ import pickle
 from typing import List, Tuple, Dict, Any, Optional
 from langchain.docstore.document import Document as LangchainDocument
 
-from backend.config import VECTOR_DB_PATH, TOP_K_RESULTS
-from backend.services.embedding import generate_embeddings, get_embedding_model, get_embedding_dimension
+try:
+    # 本地开发环境
+    from backend.config import VECTOR_DB_PATH, TOP_K_RESULTS
+    from backend.services.embedding import generate_embeddings, get_embedding_model, get_embedding_dimension
+except ModuleNotFoundError:
+    # Railway部署环境
+    from config import VECTOR_DB_PATH, TOP_K_RESULTS
+    from services.embedding import generate_embeddings, get_embedding_model, get_embedding_dimension
 
 METADATA_EXTENSION = ".meta.pkl"
 INDEX_EXTENSION = ".index"

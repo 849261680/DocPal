@@ -7,8 +7,14 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document as LangchainDocument
 from fastapi import UploadFile
 
-from backend.config import CHUNK_SIZE, CHUNK_OVERLAP, UPLOAD_DIR
-from backend.utils.file_utils import ensure_directory, get_safe_filename
+try:
+    # 本地开发环境
+    from backend.config import CHUNK_SIZE, CHUNK_OVERLAP, UPLOAD_DIR
+    from backend.utils.file_utils import ensure_directory, get_safe_filename
+except ModuleNotFoundError:
+    # Railway部署环境
+    from config import CHUNK_SIZE, CHUNK_OVERLAP, UPLOAD_DIR
+    from utils.file_utils import ensure_directory, get_safe_filename
 
 # 确保上传目录存在 (虽然 config.py 也做了，但这里作为服务自身依赖明确一下)
 ensure_directory(UPLOAD_DIR)

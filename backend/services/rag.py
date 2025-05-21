@@ -3,14 +3,26 @@
 import httpx
 from typing import List, Tuple, Dict, Any, Optional
 
-from backend.config import (
-    DEEPSEEK_API_KEY,
-    DEEPSEEK_API_BASE_URL,
-    CHAT_MODEL,
-    TOP_K_RESULTS
-)
-from backend.services.vector_store import get_vector_store, LangchainDocument
-from backend.api.models import SourceDocument # 用于格式化返回的 sources
+try:
+    # 本地开发环境
+    from backend.config import (
+        DEEPSEEK_API_KEY,
+        DEEPSEEK_API_BASE_URL,
+        CHAT_MODEL,
+        TOP_K_RESULTS
+    )
+    from backend.services.vector_store import get_vector_store, LangchainDocument
+    from backend.api.models import SourceDocument # 用于格式化返回的 sources
+except ModuleNotFoundError:
+    # Railway部署环境
+    from config import (
+        DEEPSEEK_API_KEY,
+        DEEPSEEK_API_BASE_URL,
+        CHAT_MODEL,
+        TOP_K_RESULTS
+    )
+    from services.vector_store import get_vector_store, LangchainDocument
+    from api.models import SourceDocument # 用于格式化返回的 sources
 
 async def generate_answer_from_llm(
     query: str,

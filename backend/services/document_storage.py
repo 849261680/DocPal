@@ -5,8 +5,19 @@ from datetime import datetime
 from typing import List, Dict, Optional
 
 # 文件存储路径
-DOCUMENT_METADATA_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-                                     "data", "document_metadata.json")
+try:
+    # 本地开发环境
+    DOCUMENT_METADATA_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+                                         "data", "document_metadata.json")
+except:
+    # Railway部署环境
+    # 如果在Railway环境中目录结构被扁平化，尝试其他路径
+    try:
+        DOCUMENT_METADATA_FILE = os.path.join(os.path.dirname(__file__), 
+                                         "data", "document_metadata.json")
+    except:
+        # 最后派生点，尝试使用相对路径
+        DOCUMENT_METADATA_FILE = os.path.join("data", "document_metadata.json")
 
 class DocumentInfo:
     def __init__(self, 

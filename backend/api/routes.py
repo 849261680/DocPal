@@ -6,35 +6,69 @@ import os
 from typing import List, Optional
 from datetime import datetime
 
-from backend.api.models import (
-    UploadResponse,
-    QueryRequest,
-    QueryResponse,
-    HealthResponse,
-    SourceDocument,
-    DocumentMetadata,
-    DocumentListResponse,
-    AskRequest,
-    AskResponse,
-    DocumentStatusResponse
-)
-from backend.services.document_loader import (
-    load_document,
-    split_documents,
-    save_uploaded_file
-)
-from backend.services.vector_store import get_vector_store, FAISSVectorStore
-from backend.services.rag import query_rag_pipeline
-from backend.config import TOP_K_RESULTS # 默认的 top_k 值
-from backend.services.document_storage import (
-    DocumentInfo, 
-    get_all_documents, 
-    save_document_info, 
-    delete_document,
-    clear_all_documents,
-    update_document_status,
-    get_document_info
-)
+try:
+    # 本地开发环境
+    from backend.api.models import (
+        UploadResponse,
+        QueryRequest,
+        QueryResponse,
+        HealthResponse,
+        SourceDocument,
+        DocumentMetadata,
+        DocumentListResponse,
+        AskRequest,
+        AskResponse,
+        DocumentStatusResponse
+    )
+    from backend.services.document_loader import (
+        load_document,
+        split_documents,
+        save_uploaded_file
+    )
+    from backend.services.vector_store import get_vector_store, FAISSVectorStore
+    from backend.services.rag import query_rag_pipeline
+    from backend.config import TOP_K_RESULTS # 默认的 top_k 值
+    from backend.services.document_storage import (
+        DocumentInfo, 
+        get_all_documents,
+        save_document_info, 
+        delete_document,
+        clear_all_documents,
+        get_document_status,
+        update_document_status
+    )
+except ModuleNotFoundError:
+    # Railway部署环境（目录结构已扁平化）
+    from api.models import (
+        UploadResponse,
+        QueryRequest,
+        QueryResponse,
+        HealthResponse,
+        SourceDocument,
+        DocumentMetadata,
+        DocumentListResponse,
+        AskRequest,
+        AskResponse,
+        DocumentStatusResponse
+    )
+    from services.document_loader import (
+        load_document,
+        split_documents,
+        save_uploaded_file
+    )
+    from services.vector_store import get_vector_store, FAISSVectorStore
+    from services.rag import query_rag_pipeline
+    from config import TOP_K_RESULTS # 默认的 top_k 值
+    from services.document_storage import (
+        DocumentInfo, 
+        get_all_documents,
+        save_document_info,
+        delete_document,
+        clear_all_documents,
+        get_document_status,
+        update_document_status,
+        get_document_info
+    )
 
 # 直接在Python中定义ProcessingStatus枚举
 # 这样可以避免从 TypeScript 文件导入的问题

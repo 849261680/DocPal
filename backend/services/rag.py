@@ -45,38 +45,39 @@ async def generate_answer_from_llm(
 
     context_str = "\n\n---\n\n".join([doc.page_content for doc in context_chunks])
     
-    prompt = f"""基于以下提供的上下文信息，请用中文回答用户的问题。
+    # 系统消息和用户消息
+    system_message = "你是一个基于用户提供文档的智能问答助手。请根据文档内容回答问题，如果文档中没有相关信息，请如实告知。"
+    
+    # 用户消息包含上下文和问题
+    user_message = f"""基于以下提供的上下文信息，请用中文回答用户的问题。
 如果上下文中没有足够的信息来回答问题，请明确说明上下文中没有找到相关答案，不要编造。
 
 上下文信息:
 {context_str}
 
-用户问题: {query}
-
-回答:"""
-
-    messages = [
-        {"role": "system", "content": "你是一个基于用户提供文档的智能问答助手。请根据文档内容回答问题，如果文档中没有相关信息，请如实告知。"},
-        {"role": "user", "content": prompt}
-    ]
+用户问题: {query}"""
 
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
 
+    # 根据Cohere API文档格式化请求
+    # https://docs.cohere.com/reference/chat
     payload = {
         "model": chat_model,
-        "messages": messages,
-        "temperature": 0.7, # 可以根据需要调整
-        "max_tokens": 1500  # 可以根据需要调整
+        "message": user_message,  # Cohere要求提供message字段
+        "preamble": system_message,  # 系统消息在Cohere API中使用preamble字段
+        "temperature": 0.7,
+        "max_tokens": 1500
     }
 
     # Cohere API 标准端点
     api_endpoint = f"{base_url.rstrip('/')}/v1/chat"
 
     print(f"向 Cohere API ({api_endpoint}) 发送请求...")
-    print(f"Prompt (部分): {prompt[:200]}...")
+    print(f"使用模型: {chat_model}")
+    print(f"用户消息 (部分): {user_message[:200]}...")
 
     async with httpx.AsyncClient(timeout=60.0) as client: # 设置超时时间
         try:
@@ -84,16 +85,16 @@ async def generate_answer_from_llm(
             response.raise_for_status()  # 如果是 4xx 或 5xx 错误，则抛出 HTTPError
             
             api_response = response.json()
-            print(f"Cohere API 原始响应 (部分): {str(api_response)[:200]}...")
-
-            if api_response.get("generations") and len(api_response["generations"]) > 0:
-                answer = api_response["generations"][0]["text"]
+            print(f"Cohere API 响应状态: 成功")
+            
+            # 检查响应格式并提取回答
+            # Cohere的响应格式: https://docs.cohere.com/reference/chat-response
+            if "text" in api_response:
+                answer = api_response["text"]
                 return {"answer": answer.strip(), "raw_response": api_response}
             else:
-                error_message = api_response.get("error", {}).get("message", "未知错误或空响应")
-                print(f"Cohere API 返回错误或空响应: {error_message}")
-                print(f"完整响应: {api_response}")
-                return {"answer": f"抱歉，调用语言模型时出错: {error_message}", "raw_response": api_response}
+                print(f"Cohere API 返回了意外的响应格式: {api_response}")
+                return {"answer": "抱歉，处理模型响应时遇到格式问题。", "raw_response": api_response}
         
         except httpx.HTTPStatusError as e:
             print(f"Cohere API 请求失败，状态码: {e.response.status_code}, 响应: {e.response.text}")

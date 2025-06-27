@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
 
 # 显式指定 .env 文件的路径，使其相对于当前 config.py 文件
 #这样无论从哪里运行，都能正确加载 backend/.env

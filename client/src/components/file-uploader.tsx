@@ -224,6 +224,9 @@ export default function FileUploader() {
           // 使用带重试逻辑的上传函数
           const result = await uploadFileWithRetry(file, baseApiUrl, 3);
           console.log(`文件 ${file.name} 上传成功:`, result);
+          if (result.error) {
+            throw new Error(result.error);
+          }
         } catch (fileError) {
           // 处理单个文件上传错误
           console.error(`文件 ${file.name} 上传失败:`, fileError);

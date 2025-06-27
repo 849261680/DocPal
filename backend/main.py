@@ -51,6 +51,7 @@ from starlette.responses import Response
 # 使用环境变量来设置允许的源域名
 default_origins = [
     "https://enterprise-knowledge-hub.vercel.app",  # Vercel前端
+    "https://ragsys.vercel.app", # Vercel前端
     "http://localhost:5173",                       # 本地开发环境 (Vite)
     "http://localhost:3000"                        # 本地开发环境 (CRA)
 ]

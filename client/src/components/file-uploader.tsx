@@ -157,8 +157,16 @@ export default function FileUploader() {
           console.error(`上传失败: ${response.status} ${response.statusText}`, errorText);
           throw new Error(errorText || `上传失败: ${response.status}`);
         }
-        
-        const result = await response.json();
+
+        // 检查响应体是否为空
+        const responseText = await response.text();
+        if (!responseText) {
+          console.log(`文件 ${file.name} 上传成功，响应体为空`);
+          return { success: true }; // 返回一个表示成功的对象
+        }
+
+        // 如果响应体不为空，则解析为JSON
+        const result = JSON.parse(responseText);
         console.log(`文件 ${file.name} 上传成功:`, result);
         return result;
       } catch (err) {

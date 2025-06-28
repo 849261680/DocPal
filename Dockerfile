@@ -20,4 +20,4 @@ COPY start_backend.py ./
 ENV PYTHONPATH=/app
 
 # 运行服务
-CMD ["python", "start_backend.py", "--host", "0.0.0.0", "--port", "${PORT:-8000}"] 
+CMD ["python", "start_backend.py", "--host", "0.0.0.0", "--port", "${PORT:-8000}"]

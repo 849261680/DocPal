@@ -15,7 +15,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 # 确保在导入任何使用配置的模块之前加载环境变量
 # config.py 内部会调用 load_dotenv()
-import config 
+try:
+    # Railway部署环境
+    from backend import config
+except ModuleNotFoundError:
+    # 本地开发环境
+    import config 
 
 # 根据环境调整导入方式
 try:

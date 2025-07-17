@@ -10,7 +10,7 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(description='启动企业知识库后端服务')
     parser.add_argument('--host', default='0.0.0.0', help='服务器主机地址')
-    parser.add_argument('--port', default=8000, type=int, help='服务器端口')
+    parser.add_argument('--port', default=8002, type=int, help='服务器端口')
     parser.add_argument('--reload', action='store_true', help='是否启用热重载')
     args = parser.parse_args()
     

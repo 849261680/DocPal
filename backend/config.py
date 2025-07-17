@@ -2,15 +2,19 @@ from dotenv import load_dotenv
 import os
 from dotenv import load_dotenv
 
-# 显式指定 .env 文件的路径，使其相对于当前 config.py 文件
-#这样无论从哪里运行，都能正确加载 backend/.env
-dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-if os.path.exists(dotenv_path):
-    print(f"[Config] Loading .env file from: {dotenv_path}")
-    # 设置override=False，确保已存在的环境变量不会被.env文件覆盖
-    load_dotenv(dotenv_path=dotenv_path, override=False)
-else:
-    print(f"[Config] .env file not found at: {dotenv_path}. Using default configurations or environment variables.")
+# 尝试加载多个可能的 .env 文件位置
+dotenv_paths = [
+    os.path.join(os.path.dirname(__file__), '.env'),  # backend/.env
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'),  # 项目根目录/.env
+]
+
+for dotenv_path in dotenv_paths:
+    if os.path.exists(dotenv_path):
+        print(f"[Config] Loading .env file from: {dotenv_path}")
+        # 设置override=False，确保已存在的环境变量不会被.env文件覆盖
+        load_dotenv(dotenv_path=dotenv_path, override=False)
+    else:
+        print(f"[Config] .env file not found at: {dotenv_path}")
 
 # DeepSeek API 配置（用于聊天/大语言模型）
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")

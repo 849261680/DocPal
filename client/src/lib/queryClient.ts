@@ -11,7 +11,7 @@ export const getApiBaseUrl = () => {
   }
   
   // 如果没有环境变量，则在本地开发时使用默认值
-  const defaultPort = import.meta.env.VITE_BACKEND_PORT || '8000';
+  const defaultPort = import.meta.env.VITE_BACKEND_PORT || '8002';
   const defaultHost = import.meta.env.VITE_BACKEND_HOST || '127.0.0.1';
   return window.location.hostname === 'localhost' ? 
     `http://${defaultHost}:${defaultPort}` : ''; // 生产环境若无VITE_API_BASE_URL则返回空字符串，下面会拼接/api

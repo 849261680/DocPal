@@ -74,22 +74,55 @@ else:
 
 # 添加特殊配置，添加"*"来允许所有源（开发时使用）
 if "*" in origins:
-    origins = ["*"]
     print("警告: 开启了允许所有源的CORS访问")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=False, 
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-    max_age=86400
-)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False, 
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+        max_age=86400
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True, 
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+        max_age=86400
+    )
 
 # 应用启动事件处理器
 @app.on_event("startup")
 async def startup_event():
     print("FastAPI 应用启动中...")
+    
+    # 初始化数据库表
+    try:
+        print("正在初始化数据库...")
+        # 根据环境调整导入方式
+        try:
+            from backend.database import create_tables
+        except ModuleNotFoundError:
+            from database import create_tables
+        
+        create_tables()
+        print("数据库表已创建。")
+        
+        # 验证表是否创建成功
+        import sqlite3
+        from database import DB_PATH
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        print(f"数据库中的表: {tables}")
+        conn.close()
+    except Exception as e:
+        print(f"启动时创建数据库表失败: {e}")
+        # raise RuntimeError(f"数据库初始化失败，应用无法启动: {e}")
+    
     # 预加载嵌入模型和向量数据库，以便首次请求时更快响应，并能及早发现问题
     try:
         print("正在初始化/加载嵌入模型...")
@@ -136,7 +169,7 @@ async def health_check():
 if __name__ == "__main__":
     # 从环境变量获取端口，如果未设置则默认为 8000
     # Uvicorn 的 --port 参数会覆盖这里的 host 和 port
-    port = int(os.getenv("BACKEND_PORT", "8000"))
+    port = int(os.getenv("BACKEND_PORT", "8002"))
     host = os.getenv("BACKEND_HOST", "0.0.0.0") # 默认监听所有网络接口，确保外部可访问
     
     print(f"准备在 {host}:{port} 启动 Uvicorn 服务器...")

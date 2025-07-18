@@ -22,10 +22,13 @@ def main():
     backend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend')
     sys.path.insert(0, os.path.dirname(backend_dir))
     
+    # 切换到backend目录
+    os.chdir(backend_dir)
+    
     # 设置Uvicorn的命令参数
     uvicorn_cmd = [
         "uvicorn",
-        "backend.main:app",
+        "main:app",
         "--host", args.host,
         "--port", str(args.port)
     ]

@@ -146,6 +146,86 @@ async def get_current_user_info(current_user: User = Depends(get_current_active_
     """获取当前用户信息"""
     return UserResponse.model_validate(current_user)
 
+@router.put("/profile", response_model=UserResponse)
+async def update_user_profile(
+    profile_data: dict,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """更新用户资料"""
+    auth_service = AuthService(db)
+    
+    try:
+        # 检查是否需要修改密码
+        if "currentPassword" in profile_data and "newPassword" in profile_data:
+            current_password = profile_data["currentPassword"]
+            new_password = profile_data["newPassword"]
+            
+            # 验证当前密码
+            if not auth_service.verify_password(current_password, current_user.password_hash):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="当前密码错误"
+                )
+            
+            # 验证新密码
+            if len(new_password) < 8:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="密码长度至少为8个字符"
+                )
+            
+            has_letter = any(c.isalpha() for c in new_password)
+            has_digit = any(c.isdigit() for c in new_password)
+            if not (has_letter and has_digit):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="密码必须包含字母和数字"
+                )
+            
+            # 更新密码
+            updated_user = auth_service.update_user_password(current_user.id, new_password)
+            return UserResponse.model_validate(updated_user)
+        
+        # 检查是否需要更新用户名
+        elif "username" in profile_data and profile_data["username"] != current_user.username:
+            new_username = profile_data["username"].strip()
+            
+            # 验证用户名
+            if len(new_username) < 3:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="用户名长度至少为3个字符"
+                )
+            if len(new_username) > 50:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="用户名长度不能超过50个字符"
+                )
+            
+            # 检查用户名是否已存在
+            existing_user = auth_service.get_user_by_username(new_username)
+            if existing_user and existing_user.id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="用户名已存在"
+                )
+            
+            # 更新用户名
+            updated_user = auth_service.update_user_username(current_user.id, new_username)
+            return UserResponse.model_validate(updated_user)
+        
+        # 如果没有实际更改，直接返回当前用户信息
+        return UserResponse.model_validate(current_user)
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"更新失败: {str(e)}"
+        )
+
 @router.post("/logout-all")
 async def logout_all(
     current_user: User = Depends(get_current_user),

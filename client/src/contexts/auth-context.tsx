@@ -100,6 +100,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateUserProfile = async (data: { username?: string; currentPassword?: string; newPassword?: string }) => {
+    try {
+      const updatedUser = await AuthAPI.updateUserProfile(data);
+      setUser(updatedUser);
+      return updatedUser;
+    } catch (error) {
+      console.error('Profile update failed:', error);
+      throw error;
+    }
+  };
+
   // 自动刷新令牌
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -126,6 +137,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     refreshToken,
+    updateUserProfile,
   };
 
   return (

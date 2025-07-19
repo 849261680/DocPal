@@ -128,4 +128,17 @@ export class AuthAPI {
   static getStoredToken(): string | null {
     return localStorage.getItem('access_token');
   }
+
+  static async updateUserProfile(data: { username?: string; currentPassword?: string; newPassword?: string }): Promise<User> {
+    const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders(),
+      },
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse<User>(response);
+  }
 }

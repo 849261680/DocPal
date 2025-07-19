@@ -133,3 +133,44 @@ class AuthService:
         refresh_token = create_refresh_token(data={"sub": user.username, "user_id": user.id})
         
         return access_token, refresh_token
+    
+    def get_user_by_username(self, username: str) -> User:
+        """根据用户名获取用户"""
+        return self.db.query(User).filter(User.username == username).first()
+    
+    def update_user_username(self, user_id: int, new_username: str) -> User:
+        """更新用户名"""
+        try:
+            user = self.db.query(User).filter(User.id == user_id).first()
+            if not user:
+                raise ValueError("用户不存在")
+            
+            user.username = new_username
+            self.db.commit()
+            self.db.refresh(user)
+            return user
+        except Exception as e:
+            self.db.rollback()
+            raise e
+    
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        """验证密码"""
+        return verify_password(plain_password, hashed_password)
+    
+    def update_user_password(self, user_id: int, new_password: str) -> User:
+        """更新用户密码"""
+        try:
+            user = self.db.query(User).filter(User.id == user_id).first()
+            if not user:
+                raise ValueError("用户不存在")
+            
+            # 哈希新密码
+            hashed_password = get_password_hash(new_password)
+            user.password_hash = hashed_password
+            
+            self.db.commit()
+            self.db.refresh(user)
+            return user
+        except Exception as e:
+            self.db.rollback()
+            raise e

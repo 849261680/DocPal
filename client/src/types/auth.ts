@@ -37,6 +37,7 @@ export interface AuthContextType {
   register: (userData: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
+  updateUserProfile: (data: { username?: string; currentPassword?: string; newPassword?: string }) => Promise<User>;
 }
 
 export interface AuthError {

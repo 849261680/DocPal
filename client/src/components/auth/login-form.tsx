@@ -32,7 +32,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   useEffect(() => {
     if (loginSuccess && isAuthenticated) {
       console.log('认证状态已更新，执行跳转...');
-      setLocation('/');
+      setLocation('/app');
     }
   }, [isAuthenticated, loginSuccess, setLocation]);
 
@@ -80,7 +80,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">登录</CardTitle>
         <CardDescription>
-          登录您的账户以访问 RAG 企业知识库
+          登录您的账户以访问 DocPal
         </CardDescription>
       </CardHeader>
       <CardContent>

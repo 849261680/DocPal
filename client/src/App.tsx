@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import LoginPage from "@/pages/login";
 import SettingsPage from "@/pages/settings";
+import LandingPage from "@/pages/landing";
 import { useEffect } from "react";
 import { keepAliveService } from "./lib/keep-alive";
 import { AuthProvider } from "@/contexts/auth-context";
@@ -16,16 +17,17 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
+      <Route path="/app">
+        <ProtectedRoute>
+          <Home />
+        </ProtectedRoute>
+      </Route>
       <Route path="/settings">
         <ProtectedRoute>
           <SettingsPage />
         </ProtectedRoute>
       </Route>
-      <Route path="/">
-        <ProtectedRoute>
-          <Home />
-        </ProtectedRoute>
-      </Route>
+      <Route path="/" component={LandingPage} />
       <Route component={NotFound} />
     </Switch>
   );

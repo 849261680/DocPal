@@ -61,7 +61,9 @@ export async function apiRequest(
   // 确保基础URL存在且不为空，或者URL已经是完整的HTTP(S)链接
   const fullUrl = url.startsWith('http') 
     ? url 
-    : `${baseUrl}/api/${url.startsWith('/') ? url.substring(1) : url}`;
+    : url.startsWith('/api/') 
+      ? `${baseUrl}${url}` // 如果URL已经包含/api/前缀，直接拼接
+      : `${baseUrl}/api/${url.startsWith('/') ? url.substring(1) : url}`; // 否则添加/api/前缀
   
   // 使用CORS代理
   const proxiedUrl = useCorsProxy(fullUrl);

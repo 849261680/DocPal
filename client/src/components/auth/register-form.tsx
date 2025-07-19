@@ -47,7 +47,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
         email: formData.email,
         password: formData.password,
       });
-      setLocation('/');
+      setLocation('/app');
     } catch (err) {
       setError(err instanceof Error ? err.message : '注册失败，请重试');
     } finally {
@@ -75,7 +75,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">注册</CardTitle>
         <CardDescription>
-          创建您的账户以使用 RAG 企业知识库
+          创建您的账户以使用 DocPal
         </CardDescription>
       </CardHeader>
       <CardContent>

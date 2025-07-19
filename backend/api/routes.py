@@ -28,7 +28,7 @@ try:
     )
     from backend.services.vector_store import get_vector_store, FAISSVectorStore
     from backend.services.rag import query_rag_pipeline, query_rag_pipeline_stream
-    from backend.config import TOP_K_RESULTS # 默认的 top_k 值
+    from backend.config import TOP_K_RESULTS, MAX_UPLOAD_SIZE_MB # 默认的 top_k 值和文件大小限制
     from backend.services.document_storage import (
         DocumentInfo, 
         get_all_documents,
@@ -60,7 +60,7 @@ except ModuleNotFoundError:
     )
     from services.vector_store import get_vector_store, FAISSVectorStore
     from services.rag import query_rag_pipeline, query_rag_pipeline_stream
-    from config import TOP_K_RESULTS # 默认的 top_k 值
+    from config import TOP_K_RESULTS, MAX_UPLOAD_SIZE_MB # 默认的 top_k 值和文件大小限制
     from services.document_storage import (
         DocumentInfo, 
         get_all_documents,
@@ -112,6 +112,14 @@ async def upload_document_route(background_tasks: BackgroundTasks, file: UploadF
         content = await file.read()
         file_size = len(content)
         print(f"成功读取文件内容，大小: {file_size} 字节")
+        
+        # 检查文件大小限制
+        max_size_bytes = MAX_UPLOAD_SIZE_MB * 1024 * 1024  # 转换为字节
+        if file_size > max_size_bytes:
+            raise HTTPException(
+                status_code=413, 
+                detail=f"文件大小超过限制。最大允许大小: {MAX_UPLOAD_SIZE_MB}MB，当前文件大小: {file_size / 1024 / 1024:.2f}MB"
+            )
         
         # 1. 保存原始文件
         print(f"开始保存文件到磁盘...")
@@ -165,8 +173,32 @@ async def process_document_async(file_path: str, filename: str):
         update_document_status(filename, ProcessingStatus.EXTRACTING, progress=10)
         
         # 2. 加载文档
-        docs = load_document(file_path)
+        print(f"开始加载文档: {filename}")
+        try:
+            docs = load_document(file_path)
+            print(f"文档加载完成，获得 {len(docs)} 个文档片段")
+        except ValueError as ve:
+            # 处理扫描版PDF的特定错误
+            error_msg = str(ve)
+            if "扫描版PDF" in error_msg:
+                print(f"检测到扫描版PDF: {filename}")
+                update_document_status(
+                    filename, 
+                    ProcessingStatus.FAILED, 
+                    progress=0, 
+                    error="检测到扫描版PDF文档，暂不支持OCR文本提取。请使用包含可选择文本的PDF文件。"
+                )
+            else:
+                update_document_status(
+                    filename, 
+                    ProcessingStatus.FAILED, 
+                    progress=0, 
+                    error=error_msg
+                )
+            return
+        
         if not docs:
+            print(f"文档加载失败: {filename} - 未能提取任何内容")
             update_document_status(
                 filename, 
                 ProcessingStatus.FAILED, 

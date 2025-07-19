@@ -23,7 +23,7 @@ export default function Home() {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
             <Brain className="h-8 w-8" />
-            <h1 className="text-2xl font-bold">RAG企业知识库问答系统</h1>
+            <h1 className="text-2xl font-bold">DocPal</h1>
           </div>
           <UserMenu />
         </div>

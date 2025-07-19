@@ -52,11 +52,11 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
         }
         
         // 检查文件大小
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        const maxSize = 100 * 1024 * 1024; // 100MB
         if (file.size > maxSize) {
           toast({
             title: "文件太大",
-            description: `${file.name} 超过10MB限制`,
+            description: `${file.name} 超过100MB限制`,
             variant: "destructive"
           });
           continue;

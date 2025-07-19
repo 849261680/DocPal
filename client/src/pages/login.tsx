@@ -18,10 +18,10 @@ export default function LoginPage() {
             <Brain className="h-12 w-12 text-blue-600" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">
-            RAG企业知识库问答系统
+            DocPal
           </h1>
           <p className="mt-2 text-gray-600">
-            智能文档检索与问答平台
+            您的智能文档问答助手
           </p>
         </div>
 
@@ -36,7 +36,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="text-center text-sm text-gray-500">
-          <p>© 2024 RAG企业知识库问答系统. 保留所有权利.</p>
+          <p>© 2024 DocPal. 保留所有权利.</p>
         </div>
       </div>
     </div>

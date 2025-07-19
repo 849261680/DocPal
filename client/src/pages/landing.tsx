@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Brain, FileText, MessageSquare, Zap, Shield, Users, CheckCircle, Star, ArrowRight } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { LogoDark } from '@/components/ui/logo';
 
 export default function LandingPage() {
   const [, setLocation] = useLocation();
@@ -72,10 +73,7 @@ export default function LandingPage() {
       {/* Header */}
       <header className="relative z-50 px-6 py-4 bg-slate-900/80 backdrop-blur-sm border-b border-slate-700/50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Brain className="h-8 w-8 text-cyan-400" />
-            <span className="text-2xl font-bold text-white">DocPal</span>
-          </div>
+          <LogoDark size="lg" />
           <nav className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-slate-300 hover:text-white transition-colors">功能特色</a>
             <a href="#pricing" className="text-slate-300 hover:text-white transition-colors">价格方案</a>
@@ -279,10 +277,7 @@ export default function LandingPage() {
       <footer className="px-6 py-12 border-t border-slate-700/50 bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center gap-3 mb-4 md:mb-0">
-              <Brain className="h-6 w-6 text-cyan-400" />
-              <span className="text-lg font-bold text-white">DocPal</span>
-            </div>
+            <LogoDark size="md" />
             <div className="flex items-center gap-6">
               <a href="#" className="text-slate-400 hover:text-white transition-colors">隐私政策</a>
               <a href="#" className="text-slate-400 hover:text-white transition-colors">服务条款</a>

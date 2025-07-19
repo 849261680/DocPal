@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import LoginPage from "@/pages/login";
 import SettingsPage from "@/pages/settings";
 import LandingPage from "@/pages/landing";
+import LogoShowcase from "@/pages/logo-showcase";
 import { useEffect } from "react";
 import { keepAliveService } from "./lib/keep-alive";
 import { AuthProvider } from "@/contexts/auth-context";
@@ -27,6 +28,7 @@ function Router() {
           <SettingsPage />
         </ProtectedRoute>
       </Route>
+      <Route path="/logo-showcase" component={LogoShowcase} />
       <Route path="/" component={LandingPage} />
       <Route component={NotFound} />
     </Switch>

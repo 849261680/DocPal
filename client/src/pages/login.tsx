@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { LoginForm } from '@/components/auth/login-form';
 import { RegisterForm } from '@/components/auth/register-form';
-import { Brain } from 'lucide-react';
+import { Logo } from '@/components/ui/logo';
 
 export default function LoginPage() {
   const [showRegister, setShowRegister] = useState(false);
@@ -14,12 +14,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-8">
         {/* Logo and Title */}
         <div className="text-center">
-          <div className="flex items-center justify-center mb-4">
-            <Brain className="h-12 w-12 text-blue-600" />
+          <div className="flex items-center justify-center mb-6">
+            <Logo size="xl" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            DocPal
-          </h1>
           <p className="mt-2 text-gray-600">
             您的智能文档问答助手
           </p>

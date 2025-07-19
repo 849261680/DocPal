@@ -5,7 +5,7 @@ import FilePreview from "@/components/file-preview";
 import ProcessingModal from "@/components/processing-modal";
 import { useDocuments } from "@/hooks/use-documents";
 import { DocumentMetadata } from "@/lib/api";
-import { Brain } from "lucide-react";
+import { LogoDark } from "@/components/ui/logo";
 import { UserMenu } from "@/components/auth/user-menu";
 
 export default function Home() {
@@ -21,10 +21,7 @@ export default function Home() {
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 shadow-lg">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Brain className="h-8 w-8" />
-            <h1 className="text-2xl font-bold">DocPal</h1>
-          </div>
+          <LogoDark size="lg" />
           <UserMenu />
         </div>
       </header>

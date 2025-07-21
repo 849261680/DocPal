@@ -147,7 +147,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 shadow-lg">
+      <header className="bg-gradient-to-r from-blue-600 to-blue-700 backdrop-blur-xl border-none text-white px-6 py-2 shadow-[0_4px_12px_rgba(0,0,0,0.15)]">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"

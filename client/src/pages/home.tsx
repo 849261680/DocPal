@@ -17,9 +17,9 @@ export default function Home() {
   const hasProcessingDocs = processingDocuments.length > 0;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-blue-800 via-blue-700 to-indigo-800">
       {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 shadow-lg">
+      <header className="bg-gradient-to-r from-blue-600/20 to-blue-700/25 backdrop-blur-xl border-none text-white px-6 py-2 shadow-[0_4px_12px_rgba(0,0,0,0.15)]">
         <div className="flex justify-between items-center">
           <LogoDark size="lg" />
           <UserMenu />

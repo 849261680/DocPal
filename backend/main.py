@@ -10,29 +10,14 @@ import uvicorn
 import sys
 from datetime import datetime  # 新增: 用于健康检查端点返回当前时间
 
-# 将项目根目录添加到Python路径
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# 将当前目录添加到Python路径，确保可以导入同级模块
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# 确保在导入任何使用配置的模块之前加载环境变量
-# config.py 内部会调用 load_dotenv()
-try:
-    # Railway部署环境
-    from backend import config
-except ModuleNotFoundError:
-    # 本地开发环境
-    import config 
-
-# 根据环境调整导入方式
-try:
-    # 本地开发环境
-    from backend.api import routes as api_routes
-    from backend.services.embedding import get_embedding_model # 用于预加载
-    from backend.services.vector_store import get_vector_store # 用于预加载
-except ModuleNotFoundError:
-    # Railway部署环境（目录结构已扁平化）
-    from api import routes as api_routes
-    from services.embedding import get_embedding_model # 用于预加载
-    from services.vector_store import get_vector_store # 用于预加载
+# 导入配置和路由模块
+import config
+from api import routes as api_routes
+from services.embedding import get_embedding_model # 用于预加载
+from services.vector_store import get_vector_store # 用于预加载
 
 # 应用标题和版本，会显示在 Swagger UI
 APP_TITLE = "RAG Enterprise Q&A Assistant API"

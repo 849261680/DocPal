@@ -34,7 +34,7 @@ export default function SettingsPage() {
   }
 
   const handleBack = () => {
-    setLocation('/');
+    setLocation('/app');
   };
 
   const validateUsername = (username: string): string | null => {

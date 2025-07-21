@@ -1,7 +1,8 @@
 # RAG 流程：检索 + 构造 Prompt + 调用 LLM 
 
 import httpx
-from typing import List, Tuple, Dict, Any, Optional
+import json
+from typing import List, Tuple, Dict, Any, Optional, AsyncGenerator
 
 try:
     # 本地开发环境
@@ -23,6 +24,89 @@ except ModuleNotFoundError:
     )
     from services.vector_store import get_vector_store, LangchainDocument
     from api.models import SourceDocument # 用于格式化返回的 sources
+
+async def generate_answer_from_llm_stream(
+    query: str,
+    context_chunks: List[LangchainDocument],
+    api_key: str = DEEPSEEK_API_KEY,
+    base_url: str = DEEPSEEK_API_BASE_URL,
+    chat_model: str = CHAT_MODEL
+) -> AsyncGenerator[Dict[str, Any], None]:
+    """
+    使用提供的上下文块和用户查询，调用 DeepSeek API 生成流式答案。
+    """
+    if not api_key:
+        print("错误: DeepSeek API Key 未配置。")
+        yield {"error": "DeepSeek API Key 未配置"}
+        return
+    
+    if not context_chunks:
+        print("警告: 没有提供上下文块，将直接向 LLM提问（可能导致幻觉）。")
+
+    context_str = "\n\n---\n\n".join([doc.page_content for doc in context_chunks])
+    
+    prompt = f"""基于以下提供的上下文信息，请用中文回答用户的问题。
+如果上下文中没有足够的信息来回答问题，请明确说明上下文中没有找到相关答案，不要编造。
+
+上下文信息:
+{context_str}
+
+用户问题: {query}
+
+回答:"""
+
+    messages = [
+        {"role": "system", "content": "你是一个基于用户提供文档的智能问答助手。请根据文档内容回答问题，如果文档中没有相关信息，请如实告知。"},
+        {"role": "user", "content": prompt}
+    ]
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": chat_model,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 1500,
+        "stream": True  # 启用流式传输
+    }
+
+    # DeepSeek API 端点
+    api_endpoint = f"{base_url.rstrip('/')}/v1/chat/completions"
+
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            async with client.stream("POST", api_endpoint, headers=headers, json=payload) as response:
+                response.raise_for_status()
+                
+                async for line in response.aiter_lines():
+                    if line.strip():
+                        if line.startswith("data: "):
+                            data = line[6:]  # 移除 "data: " 前缀
+                            if data.strip() == "[DONE]":
+                                break
+                            try:
+                                json_data = json.loads(data)
+                                if "choices" in json_data and len(json_data["choices"]) > 0:
+                                    delta = json_data["choices"][0].get("delta", {})
+                                    if "content" in delta:
+                                        yield {"content": delta["content"]}
+                            except json.JSONDecodeError as e:
+                                print(f"[DeepSeek Stream] JSON解析错误: {e}, 数据: {data}")
+                                continue
+        
+        except httpx.HTTPStatusError as e:
+            print(f"DeepSeek API 请求失败，状态码: {e.response.status_code}, 响应: {e.response.text}")
+            yield {"error": f"与语言模型通信时出错 (HTTP {e.response.status_code})"}
+        except httpx.RequestError as e:
+            print(f"DeepSeek API 请求失败: {e}")
+            yield {"error": "与语言模型通信时发生网络错误"}
+        except Exception as e:
+            print(f"处理 DeepSeek API 响应时发生未知错误: {e}")
+            yield {"error": "处理语言模型响应时发生未知错误"}
 
 async def generate_answer_from_llm(
     query: str,
@@ -69,7 +153,8 @@ async def generate_answer_from_llm(
         "model": chat_model,
         "messages": messages,
         "temperature": 0.7,
-        "max_tokens": 1500
+        "max_tokens": 1500,
+        "stream": True  # 启用流式传输
     }
 
     # DeepSeek API 端点
@@ -105,6 +190,73 @@ async def generate_answer_from_llm(
             print(f"处理 DeepSeek API 响应时发生未知错误: {e}")
             return {"answer": f"抱歉，处理语言模型响应时发生未知错误。", "raw_response": str(e)}
 
+
+async def query_rag_pipeline_stream(
+    user_query: str,
+    top_k: Optional[int] = None
+) -> AsyncGenerator[Dict[str, Any], None]:
+    """
+    完整的 RAG 流程：检索、构造 Prompt、调用 LLM（流式版本）。
+    """
+    vector_store = get_vector_store()
+    actual_top_k = top_k if top_k is not None else TOP_K_RESULTS
+
+    if vector_store.get_index_size() == 0:
+        print("RAG Pipeline: 向量数据库为空，无法进行检索。")
+        yield {
+            "type": "error",
+            "content": "知识库为空，请先上传文档后再进行提问。",
+            "sources": []
+        }
+        return
+
+    print(f"RAG Pipeline: 正在为查询 '{user_query[:50]}...' 检索 top-{actual_top_k} 相关文档块...")
+    retrieved_chunks_with_scores = vector_store.search(user_query, k=actual_top_k)
+    
+    retrieved_docs = [doc for doc, score in retrieved_chunks_with_scores]
+    
+    if not retrieved_docs:
+        print(f"RAG Pipeline: 未能从向量数据库中检索到与查询 '{user_query[:50]}...' 相关的内容。")
+        yield {
+            "type": "error",
+            "content": "抱歉，在已上传的文档中未能找到与您问题直接相关的信息。",
+            "sources": []
+        }
+        return
+    
+    print(f"RAG Pipeline: 已检索到 {len(retrieved_docs)} 个文档块，准备调用 LLM 生成答案...")
+    
+    # 先流式生成答案
+    async for chunk in generate_answer_from_llm_stream(user_query, retrieved_docs):
+        if "content" in chunk:
+            yield {
+                "type": "content",
+                "content": chunk["content"]
+            }
+        elif "error" in chunk:
+            yield {
+                "type": "error",
+                "content": chunk["error"]
+            }
+    
+    # 答案完成后发送sources信息
+    formatted_sources = [
+        SourceDocument(
+            filename=doc.metadata.get("source", "未知来源"), 
+            page_content=doc.page_content,
+            metadata=doc.metadata
+        ) for doc in retrieved_docs
+    ]
+    
+    yield {
+        "type": "sources",
+        "sources": formatted_sources
+    }
+    
+    # 发送完成信号
+    yield {
+        "type": "done"
+    }
 
 async def query_rag_pipeline(
     user_query: str,

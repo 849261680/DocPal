@@ -286,65 +286,57 @@ export default function FileUploader() {
   
   return (
     <div>
-      <div 
-        className={`relative border-2 border-dashed rounded-lg p-6 transition-all ${
-          dragActive ? "border-primary/70 bg-primary/5" : 
-          selectedFiles ? "border-success/70 bg-success/5" : 
-          "border-neutral-300 hover:border-primary/70 bg-neutral-50 hover:bg-neutral-100/60"
-        } cursor-pointer`}
-        onDragEnter={handleDrag}
-        onDragOver={handleDrag}
-        onDragLeave={handleDrag}
-        onDrop={handleDrop}
-        onClick={handleSelectFile}
-      >
-        <input 
-          ref={inputRef}
-          type="file" 
-          multiple 
-          className="hidden" // 将绝对定位改为隐藏
-          accept=".pdf,.docx,.doc,.txt"
-          onChange={(e) => handleFileChange(e.target.files)}
-        />
-        <div className="text-center">
-          {selectedFiles ? (
-            <>
-              <CheckCircle className="h-10 w-10 text-success mx-auto mb-2" />
-              <p className="text-sm font-medium text-neutral-600 mb-1">
-                {selectedFiles.length === 1 
-                  ? `已选择: ${selectedFiles[0].name}`
-                  : `已选择 ${selectedFiles.length} 个文件`}
-              </p>
-            </>
-          ) : (
-            <>
-              <Upload className="h-10 w-10 text-neutral-400 mx-auto mb-2" />
-              <p className="text-sm font-medium text-neutral-600 mb-1">将文件拖放到此处或点击浏览</p>
-              <p className="text-xs text-neutral-500">支持格式: PDF, DOCX, TXT</p>
-            </>
-          )}
-        </div>
-      </div>
+      <input 
+        ref={inputRef}
+        type="file" 
+        multiple 
+        className="hidden"
+        accept=".pdf,.docx,.doc,.txt"
+        onChange={(e) => handleFileChange(e.target.files)}
+      />
       
-      <div className="mt-3 flex justify-between items-center">
-        <span className="text-xs text-neutral-500">最大文件: 10MB/个</span>
-        <Button
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleUpload();
-          }}
-          disabled={!selectedFiles || isUploading}
-          className="text-xs"
-        >
-          {isUploading ? (
-            <>
-              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-              上传中...
-            </>
-          ) : "上传文件"}
-        </Button>
-      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        title="上传文件"
+        onClick={handleSelectFile}
+        disabled={isUploading}
+      >
+        {isUploading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Upload className="h-4 w-4" />
+        )}
+      </Button>
+      
+      {selectedFiles && (
+        <div className="absolute top-full left-0 mt-1 p-2 bg-white border border-neutral-200 rounded-lg shadow-lg min-w-48 z-10">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-neutral-600">
+              {selectedFiles.length === 1 
+                ? `已选择: ${selectedFiles[0].name}`
+                : `已选择 ${selectedFiles.length} 个文件`}
+            </span>
+            <Button
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUpload();
+              }}
+              disabled={isUploading}
+              className="text-xs h-6"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  上传中...
+                </>
+              ) : "上传"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

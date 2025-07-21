@@ -5,13 +5,31 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import LoginPage from "@/pages/login";
+import SettingsPage from "@/pages/settings";
+import LandingPage from "@/pages/landing";
+import LogoShowcase from "@/pages/logo-showcase";
 import { useEffect } from "react";
 import { keepAliveService } from "./lib/keep-alive";
+import { AuthProvider } from "@/contexts/auth-context";
+import { ProtectedRoute } from "@/components/auth/protected-route";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/app">
+        <ProtectedRoute>
+          <Home />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/settings">
+        <ProtectedRoute>
+          <SettingsPage />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/logo-showcase" component={LogoShowcase} />
+      <Route path="/" component={LandingPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -34,8 +52,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <AuthProvider>
+          <Toaster />
+          <Router />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

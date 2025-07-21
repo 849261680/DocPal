@@ -55,7 +55,7 @@ if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # 文件上传限制配置
-MAX_UPLOAD_SIZE_MB = float(os.getenv("MAX_UPLOAD_SIZE_MB", 50))  # 默认限制每个文件最大为 50 MB
+MAX_UPLOAD_SIZE_MB = float(os.getenv("MAX_UPLOAD_SIZE_MB", 100))  # 默认限制每个文件最大为 100 MB
 print(f"[Config] MAX_UPLOAD_SIZE_MB: {MAX_UPLOAD_SIZE_MB}")
 
 # RAG 配置

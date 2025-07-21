@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import ChatMessage from "@/components/chat-message";
-import { Layers, Trash2, Send } from "lucide-react";
+import { MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useChat } from "@/hooks/use-chat";
 
 export default function ChatPanel() {
   const { toast } = useToast();
-  const { messages, sendMessage, isLoading, tokensUsed, clearChat } = useChat();
+  const { messages, sendMessage, isLoading, isStreaming, tokensUsed, clearChat } = useChat();
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -17,7 +17,7 @@ export default function ChatPanel() {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${Math.min(scrollHeight, 150)}px`;
+      textareaRef.current.style.height = `${Math.min(scrollHeight, 120)}px`;
     }
   }, [input]);
 
@@ -54,110 +54,92 @@ export default function ChatPanel() {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault(); // Prevent newline
-      // Create a synthetic event or call handleSubmit directly if it doesn't rely on event details
-      // For simplicity, if handleSubmit doesn't strictly need the form event, we can call it.
-      // However, to be more robust, we might need to trigger form submission.
-      // Let's try calling handleSubmit directly, assuming it's safe.
-      
-      // We need to ensure handleSubmit has access to the current input
-      // Since handleSubmit already uses the `input` state, this should be fine.
+      e.preventDefault();
       const mockEvent = { preventDefault: () => {} } as React.FormEvent;
-      handleSubmit(mockEvent); // Call handleSubmit with a mock event or refactor handleSubmit
+      handleSubmit(mockEvent);
     }
   };
 
   return (
-    <section className="flex-1 flex flex-col h-full overflow-hidden">
+    <section className="w-[700px] flex flex-col h-full overflow-hidden bg-white border-l border-gray-200 flex-shrink-0">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-semibold text-gray-800">智能问答</h2>
+          </div>
+          {messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearChat}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              清空
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* Chat messages container */}
       <div className="flex-1 overflow-y-auto p-4 chat-container" ref={chatContainerRef}>
         {/* Welcome message */}
         {messages.length === 0 && (
-          <div className="max-w-2xl mx-auto mb-6">
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-neutral-200">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-white">
-                  <Layers className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-neutral-800 mb-2">欢迎使用企业知识库问答系统</h2>
-                  <p className="text-neutral-600 text-sm mb-3">我可以帮您从已上传的文档中找到问题的答案。开始使用请：</p>
-                  <ol className="text-sm text-neutral-600 space-y-1 list-decimal pl-5 mb-4">
-                    <li>在左侧边栏上传PDF或DOCX文档</li>
-                    <li>等待文档处理和索引完成</li>
-                    <li>在下方聊天框中提问与您文档相关的问题</li>
-                  </ol>
-                  <p className="text-sm text-neutral-500">我会搜索最相关的信息，并提供带有文档来源引用的答案。</p>
-                </div>
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <MessageSquare className="h-6 w-6 text-blue-600" />
               </div>
+              <h3 className="text-base font-medium text-gray-800 mb-2">智能问答助手</h3>
+              <p className="text-gray-500 text-sm text-center">
+                选择文档后，在下方输入问题开始对话
+              </p>
             </div>
           </div>
         )}
         
         {/* Chat messages */}
-        <div className="max-w-2xl mx-auto space-y-6">
-          {messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
-          ))}
-          
-          {/* Typing indicator */}
-          {isLoading && (
-            <div className="max-w-2xl mx-auto my-4">
-              <div className="flex items-center gap-2 text-neutral-500 text-sm">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Layers className="h-4 w-4 text-primary" />
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse"></div>
-                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
-                </div>
-              </div>
-            </div>
-          )}
+        <div className="space-y-4">
+          {messages.map((message, index) => {
+            // Check if this is the last message and it's being streamed
+            const isLastMessage = index === messages.length - 1;
+            const isMessageStreaming = isStreaming && !message.isUser && isLastMessage;
+            
+            return (
+              <ChatMessage 
+                key={message.id} 
+                message={message} 
+                isStreaming={isMessageStreaming}
+              />
+            );
+          })}
         </div>
       </div>
       
       {/* Input area */}
-      <div className="border-t border-neutral-200 bg-white px-4 py-3">
-        <div className="max-w-2xl mx-auto">
-          <form className="flex items-center" onSubmit={handleSubmit}>
+      <div className="border-t border-gray-200 bg-white p-4">
+        <form className="flex items-end gap-2" onSubmit={handleSubmit}>
+          <div className="flex-1">
             <textarea
               ref={textareaRef}
               rows={1}
-              className="flex-grow rounded-lg border border-neutral-300 focus:border-primary focus:ring-2 focus:ring-primary/20 px-4 py-3 text-neutral-800 placeholder-neutral-400 text-sm resize-none"
-              placeholder="询问关于您文档的问题..."
+              className="w-full rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 px-3 py-2 text-gray-800 placeholder-gray-400 text-sm resize-none"
+              placeholder="输入您的问题..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={isLoading}
               onKeyDown={handleKeyDown}
-            ></textarea>
-            <Button
-              type="submit"
-              size="icon"
-              className="ml-2 shrink-0"
-              disabled={isLoading || !input.trim()}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </form>
-          
-          <div className="mt-2 flex items-center justify-between text-xs text-neutral-500">
-            <div>
-              <span>{tokensUsed}</span> tokens已使用
-            </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-6 text-xs"
-              onClick={handleClearChat}
-              disabled={messages.length === 0}
-            >
-              <Trash2 className="h-3 w-3 mr-1" />
-              清空聊天
-            </Button>
+            />
           </div>
-        </div>
+          <Button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 shrink-0"
+            disabled={isLoading || !input.trim()}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
       </div>
     </section>
   );

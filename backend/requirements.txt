@@ -12,6 +12,13 @@ PyMuPDF==1.22.5
 docx2txt
 typing_extensions
 pydantic
+# 用户认证相关依赖
+passlib[bcrypt]
+python-jose[cryptography]
+sqlalchemy
+aiosqlite
+PyJWT
+email-validator
 # 移除OpenAI相关依赖
 # openai>=1.6.0
 # tiktoken>=0.5.1

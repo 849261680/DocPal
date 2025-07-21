@@ -1,8 +1,9 @@
 # 路由注册 
 from fastapi import APIRouter, File, UploadFile, HTTPException, Body, Depends, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
 import traceback
 import os
+import json
 from typing import List, Optional
 from datetime import datetime
 
@@ -26,8 +27,8 @@ try:
         save_uploaded_file
     )
     from backend.services.vector_store import get_vector_store, FAISSVectorStore
-    from backend.services.rag import query_rag_pipeline
-    from backend.config import TOP_K_RESULTS # 默认的 top_k 值
+    from backend.services.rag import query_rag_pipeline, query_rag_pipeline_stream
+    from backend.config import TOP_K_RESULTS, MAX_UPLOAD_SIZE_MB # 默认的 top_k 值和文件大小限制
     from backend.services.document_storage import (
         DocumentInfo, 
         get_all_documents,
@@ -37,6 +38,7 @@ try:
         get_document_status,
         update_document_status
     )
+    from backend.api.auth import router as auth_router
 except ModuleNotFoundError:
     # Railway部署环境（目录结构已扁平化）
     from api.models import (
@@ -57,8 +59,8 @@ except ModuleNotFoundError:
         save_uploaded_file
     )
     from services.vector_store import get_vector_store, FAISSVectorStore
-    from services.rag import query_rag_pipeline
-    from config import TOP_K_RESULTS # 默认的 top_k 值
+    from services.rag import query_rag_pipeline, query_rag_pipeline_stream
+    from config import TOP_K_RESULTS, MAX_UPLOAD_SIZE_MB # 默认的 top_k 值和文件大小限制
     from services.document_storage import (
         DocumentInfo, 
         get_all_documents,
@@ -69,6 +71,7 @@ except ModuleNotFoundError:
         update_document_status,
         get_document_info
     )
+    from api.auth import router as auth_router
 
 # 直接在Python中定义ProcessingStatus枚举
 # 这样可以避免从 TypeScript 文件导入的问题
@@ -85,8 +88,11 @@ class ProcessingStatus(str, Enum):
 
 router = APIRouter()
 
+# 包含认证路由
+router.include_router(auth_router)
+
 # Dependency to get the vector store instance
-def get_db() -> FAISSVectorStore:
+def get_vector_db() -> FAISSVectorStore:
     return get_vector_store()
 
 @router.post("/upload_doc/", response_model=UploadResponse)
@@ -106,6 +112,14 @@ async def upload_document_route(background_tasks: BackgroundTasks, file: UploadF
         content = await file.read()
         file_size = len(content)
         print(f"成功读取文件内容，大小: {file_size} 字节")
+        
+        # 检查文件大小限制
+        max_size_bytes = MAX_UPLOAD_SIZE_MB * 1024 * 1024  # 转换为字节
+        if file_size > max_size_bytes:
+            raise HTTPException(
+                status_code=413, 
+                detail=f"文件大小超过限制。最大允许大小: {MAX_UPLOAD_SIZE_MB}MB，当前文件大小: {file_size / 1024 / 1024:.2f}MB"
+            )
         
         # 1. 保存原始文件
         print(f"开始保存文件到磁盘...")
@@ -159,8 +173,32 @@ async def process_document_async(file_path: str, filename: str):
         update_document_status(filename, ProcessingStatus.EXTRACTING, progress=10)
         
         # 2. 加载文档
-        docs = load_document(file_path)
+        print(f"开始加载文档: {filename}")
+        try:
+            docs = load_document(file_path)
+            print(f"文档加载完成，获得 {len(docs)} 个文档片段")
+        except ValueError as ve:
+            # 处理扫描版PDF的特定错误
+            error_msg = str(ve)
+            if "扫描版PDF" in error_msg:
+                print(f"检测到扫描版PDF: {filename}")
+                update_document_status(
+                    filename, 
+                    ProcessingStatus.FAILED, 
+                    progress=0, 
+                    error="检测到扫描版PDF文档，暂不支持OCR文本提取。请使用包含可选择文本的PDF文件。"
+                )
+            else:
+                update_document_status(
+                    filename, 
+                    ProcessingStatus.FAILED, 
+                    progress=0, 
+                    error=error_msg
+                )
+            return
+        
         if not docs:
+            print(f"文档加载失败: {filename} - 未能提取任何内容")
             update_document_status(
                 filename, 
                 ProcessingStatus.FAILED, 
@@ -259,9 +297,69 @@ async def query_route(request: QueryRequest = Body(...)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"处理查询时发生内部服务器错误。错误详情: {str(e)}")
 
+@router.post("/query/stream")
+async def query_stream_route(request: QueryRequest = Body(...)):
+    """
+    接收用户查询，通过 RAG 流程生成流式答案并返回。
+    """
+    if not request.query or not request.query.strip():
+        raise HTTPException(status_code=400, detail="查询内容不能为空。")
+    
+    async def generate_stream():
+        try:
+            print(f"接收到流式查询请求: '{request.query[:100]}...', top_k: {request.top_k or TOP_K_RESULTS}")
+            
+            async for chunk in query_rag_pipeline_stream(request.query, top_k=request.top_k or TOP_K_RESULTS):
+                # 将每个数据块转换为SSE格式，处理SourceDocument序列化
+                if chunk.get("type") == "sources" and "sources" in chunk:
+                    # 将SourceDocument对象转换为字典
+                    serialized_sources = []
+                    for source in chunk["sources"]:
+                        if hasattr(source, 'model_dump'):
+                            # Pydantic v2
+                            serialized_sources.append(source.model_dump())
+                        elif hasattr(source, 'dict'):
+                            # Pydantic v1
+                            serialized_sources.append(source.dict())
+                        else:
+                            # 如果不是Pydantic对象，直接转换为字典
+                            serialized_sources.append({
+                                "filename": getattr(source, 'filename', ''),
+                                "page_content": getattr(source, 'page_content', ''),
+                                "metadata": getattr(source, 'metadata', {})
+                            })
+                    chunk["sources"] = serialized_sources
+                
+                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+            
+            # 发送结束信号
+            yield "data: [DONE]\n\n"
+            
+        except Exception as e:
+            print(f"处理流式查询 '{request.query[:100]}...' 时发生意外错误: {e}")
+            traceback.print_exc()
+            error_chunk = {
+                "type": "error",
+                "content": f"处理查询时发生内部服务器错误。错误详情: {str(e)}"
+            }
+            yield f"data: {json.dumps(error_chunk, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+    
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
 # 新增：基于文档的问答接口
 @router.post("/ask/", response_model=AskResponse)
-async def ask_route(request: AskRequest = Body(...), db: FAISSVectorStore = Depends(get_db)):
+async def ask_route(request: AskRequest = Body(...), db: FAISSVectorStore = Depends(get_vector_db)):
     """
     基于用户问题和可选的特定文档，生成回答
     """
@@ -313,7 +411,7 @@ async def health_check_route():
 
 # 可以添加一个路由来重置/清空向量数据库，主要用于测试
 @router.post("/reset_vector_store/", response_model=dict)
-async def reset_vector_store_route(db: FAISSVectorStore = Depends(get_db)):
+async def reset_vector_store_route(db: FAISSVectorStore = Depends(get_vector_db)):
     """
     清空并重置 FAISS 向量数据库。
     请谨慎使用，这将删除所有已嵌入的文档。
@@ -331,7 +429,7 @@ async def reset_vector_store_route(db: FAISSVectorStore = Depends(get_db)):
 
 # 获取当前向量数据库中的文档数量
 @router.get("/vector_store_size", response_model=dict)
-async def get_vector_store_size_route(db: FAISSVectorStore = Depends(get_db)):
+async def get_vector_store_size_route(db: FAISSVectorStore = Depends(get_vector_db)):
     """
     获取当前向量数据库中存储的文档块数量。
     """
@@ -345,7 +443,7 @@ async def get_vector_store_size_route(db: FAISSVectorStore = Depends(get_db)):
 
 # 添加POST方法路由以兼容前端
 @router.post("/vector_store_size", response_model=dict)
-async def post_vector_store_size_route(db: FAISSVectorStore = Depends(get_db)):
+async def post_vector_store_size_route(db: FAISSVectorStore = Depends(get_vector_db)):
     """
     获取当前向量数据库中存储的文档块数量（POST方法）。
     """
@@ -353,7 +451,7 @@ async def post_vector_store_size_route(db: FAISSVectorStore = Depends(get_db)):
 
 # 新增：获取文档列表
 @router.delete("/documents/{filename}", response_model=dict)
-async def delete_document_route(filename: str, db: FAISSVectorStore = Depends(get_db)):
+async def delete_document_route(filename: str, db: FAISSVectorStore = Depends(get_vector_db)):
     """
     删除指定的文档，包括文件、元数据和向量存储中的数据
     """
@@ -435,7 +533,7 @@ async def post_documents_route():
     return await get_documents_route()
 # 添加清空所有文档的API端点
 @router.delete("/documents", response_model=dict)
-async def delete_all_documents_route(db: FAISSVectorStore = Depends(get_db)):
+async def delete_all_documents_route(db: FAISSVectorStore = Depends(get_vector_db)):
     """
     删除知识库中的所有文档，包括文件、元数据和向量存储中的数据
     """
@@ -466,7 +564,7 @@ async def delete_all_documents_route(db: FAISSVectorStore = Depends(get_db)):
 
 # 兼容前端错误的URL路径
 @router.post("/api/reset_vector_store", response_model=dict)
-async def reset_vector_store_compatibility_route(db: FAISSVectorStore = Depends(get_db)):
+async def reset_vector_store_compatibility_route(db: FAISSVectorStore = Depends(get_vector_db)):
     """
     兼容前端错误URL路径的向量数据库重置功能。
     这个路由处理错误URL格式 /api/api/reset_vector_store 的请求。
@@ -477,7 +575,7 @@ async def reset_vector_store_compatibility_route(db: FAISSVectorStore = Depends(
 
 # 添加对DELETE方法的支持
 @router.delete("/api/reset_vector_store", response_model=dict)
-async def reset_vector_store_delete_route(db: FAISSVectorStore = Depends(get_db)):
+async def reset_vector_store_delete_route(db: FAISSVectorStore = Depends(get_vector_db)):
     """
     通过DELETE方法支持重置向量数据库
     """
@@ -486,7 +584,7 @@ async def reset_vector_store_delete_route(db: FAISSVectorStore = Depends(get_db)
 
 # 添加对GET方法的支持（不推荐，但为兼容性添加）
 @router.get("/api/reset_vector_store", response_model=dict)
-async def reset_vector_store_get_route(db: FAISSVectorStore = Depends(get_db)):
+async def reset_vector_store_get_route(db: FAISSVectorStore = Depends(get_vector_db)):
     """
     通过GET方法支持重置向量数据库（不推荐，但为兼容性添加）
     """
@@ -495,9 +593,57 @@ async def reset_vector_store_get_route(db: FAISSVectorStore = Depends(get_db)):
 
 # 添加对原始路径的DELETE方法支持
 @router.delete("/reset_vector_store", response_model=dict)
-async def reset_vector_store_delete_original_route(db: FAISSVectorStore = Depends(get_db)):
+async def reset_vector_store_delete_original_route(db: FAISSVectorStore = Depends(get_vector_db)):
     """
     通过DELETE方法支持原始路径的重置向量数据库
     """
     print("通过原始路径DELETE方法请求重置向量数据库...")
     return await reset_vector_store_route(db)
+
+# 添加文件预览端点
+@router.get("/preview/{filename}")
+async def preview_file(filename: str):
+    """
+    文件预览端点，返回上传的文件以供预览
+    """
+    try:
+        # 从文档元数据中查找文件
+        documents = get_all_documents()
+        target_doc = next((doc for doc in documents if doc.filename == filename), None)
+        
+        if not target_doc:
+            raise HTTPException(status_code=404, detail=f"找不到文件: {filename}")
+        
+        file_path = target_doc.file_path
+        
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail=f"文件不存在: {filename}")
+        
+        # 根据文件扩展名确定媒体类型
+        _, ext = os.path.splitext(filename.lower())
+        media_type = "application/octet-stream"
+        
+        if ext == '.pdf':
+            media_type = "application/pdf"
+        elif ext in ['.txt', '.md']:
+            media_type = "text/plain"
+        elif ext in ['.doc', '.docx']:
+            media_type = "application/msword"
+        
+        import urllib.parse
+        
+        # 对文件名进行URL编码以支持中文
+        encoded_filename = urllib.parse.quote(filename, safe='')
+        
+        return FileResponse(
+            file_path,
+            media_type=media_type,
+            headers={
+                "Content-Disposition": f"inline; filename*=UTF-8''{encoded_filename}",
+                "Cache-Control": "no-cache"
+            }
+        )
+    except Exception as e:
+        print(f"预览文件时出错: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"预览文件时发生错误: {str(e)}")

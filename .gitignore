@@ -44,7 +44,8 @@ MANIFEST
 # Environment files
 .env
 .env.*
-!/.env.example # Allow .env.example
+!.env.example
+!backend/.env.example
 
 # Data and Index files
 index/faiss_store.index

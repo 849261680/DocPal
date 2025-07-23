@@ -36,7 +36,8 @@ faiss-cpu==1.11.0
 numpy==1.26.4
 scipy==1.13.1
 
-# LangChain核心（无ML依赖）
+# LangChain核心
+langchain==0.3.25
 langchain-core==0.3.60
 langchain-text-splitters==0.3.8
 langsmith==0.3.42

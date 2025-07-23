@@ -25,6 +25,12 @@ email-validator==2.1.0
 python-multipart==0.0.20
 python-dotenv==1.1.0
 
+# 认证相关
+PyJWT==2.8.0
+passlib==1.7.4
+python-jose==3.3.0
+bcrypt==4.1.2
+
 # 文档处理（轻量级）
 python-docx==1.1.2
 PyMuPDF==1.25.5

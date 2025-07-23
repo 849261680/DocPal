@@ -1,11 +1,11 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "pip install openai tiktoken && pip install -r backend/requirements.txt"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "sh -c 'python -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}'",
+    "startCommand": "python main.py",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

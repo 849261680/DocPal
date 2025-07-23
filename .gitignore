@@ -83,7 +83,6 @@ generated-icon.png
 ehthumbs.db
 Thumbs.db
 
-# Deployment files
+# Deployment files  
 railway-config.txt
 render.yaml
-nixpacks.toml

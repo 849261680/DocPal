@@ -14,7 +14,7 @@ requests-toolbelt==1.0.0
 aiosqlite==0.19.0
 alembic==1.13.1
 SQLAlchemy==2.0.41
-async-timeout==4.0.3
+asyncio-timeout==4.0.3
 anyio==4.9.0
 greenlet==3.2.2
 

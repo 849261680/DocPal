@@ -14,10 +14,10 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY backend ./backend
-COPY start_backend.py ./
 
 # 设置环境变量
 ENV PYTHONPATH=/app
 
 # 运行服务
-CMD ["python", "start_backend.py", "--host", "0.0.0.0", "--port", "${PORT:-8000}"]
+WORKDIR /app/backend
+CMD ["python", "main.py", "--host", "0.0.0.0", "--port", "${PORT:-8000}"]

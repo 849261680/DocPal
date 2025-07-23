@@ -38,20 +38,52 @@ MANIFEST
 *.sln
 *.sw?
 .cursor/
+.claude/
+.trae/
 
 # Environment files
 .env
 .env.*
 !/.env.example # Allow .env.example
 
-# Data and Index
+# Data and Index files
 index/faiss_store.index
 index/faiss_store.meta.pkl
 data/uploaded_files/
 data/document_metadata.json
 uploads/
+backend/data/uploaded_files/
+backend/index/
+
+# Database files
+*.db
+app.db
+backend/app.db
+
+# Log files
+*.log
 backend_log.txt
 
-# Other
-*.tar.gz
-# server/public # This was in the original, keep if `server/` dir is kept and has a public dir
+# Test files
+test_*.py
+test-*.html
+test*.pdf
+
+# Temporary files
+*.tmp
+*.temp
+generated-icon.png
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Deployment files
+railway-config.txt
+render.yaml
+nixpacks.toml

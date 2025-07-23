@@ -33,9 +33,9 @@ venv/
 ENV/
 
 # 用户上传和索引文件
-data/
+backend/data/uploaded_files/
+backend/index/
 uploads/
-index/
 temp/
 
 # IDE
@@ -47,6 +47,5 @@ temp/
 
 # Node 相关 (前端)
 node_modules/
-client/
 frontend/
 **/node_modules/ 

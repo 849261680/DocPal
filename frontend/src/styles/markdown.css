@@ -1,0 +1,74 @@
+/* Markdown content styles */
+.markdown-content {
+  line-height: 1.6;
+}
+
+.markdown-content h1:first-child,
+.markdown-content h2:first-child,
+.markdown-content h3:first-child,
+.markdown-content h4:first-child,
+.markdown-content h5:first-child,
+.markdown-content h6:first-child {
+  margin-top: 0;
+}
+
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content ul:last-child,
+.markdown-content ol:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content pre {
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.markdown-content code {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.markdown-content table th,
+.markdown-content table td {
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-content hr {
+  border: none;
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 1.5rem 0;
+}
+
+/* Syntax highlighting adjustments */
+.hljs {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* Custom scrollbar for code blocks */
+.markdown-content pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.markdown-content pre::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.markdown-content pre::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.markdown-content pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}

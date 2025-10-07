@@ -10,12 +10,15 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+# 确保pip可用
+RUN python -m ensurepip --upgrade
+
 # 复制requirements文件
 COPY backend/requirements.txt ./requirements.txt
 
 # 升级pip并安装Python依赖
 RUN python -m pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    python -m pip install --no-cache-dir -r requirements.txt
 
 # 复制后端代码
 COPY backend ./backend

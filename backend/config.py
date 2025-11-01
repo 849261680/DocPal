@@ -1,11 +1,10 @@
 from dotenv import load_dotenv
 import os
-from dotenv import load_dotenv
 
 # 尝试加载多个可能的 .env 文件位置
 dotenv_paths = [
-    os.path.join(os.path.dirname(__file__), '.env'),  # backend/.env
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'),  # 项目根目录/.env
+    os.path.join(os.path.dirname(__file__), ".env"),  # backend/.env
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"),  # 项目根目录/.env
 ]
 
 for dotenv_path in dotenv_paths:
@@ -24,7 +23,9 @@ CHAT_MODEL = os.getenv("CHAT_MODEL", "deepseek-chat")
 # Cohere API 配置（用于嵌入向量）
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 COHERE_API_BASE_URL = os.getenv("COHERE_API_BASE_URL", "https://api.cohere.ai")
-COHERE_EMBEDDING_MODEL = os.getenv("COHERE_EMBEDDING_MODEL", "embed-multilingual-v3.0")  # 多语言模型支持中文
+COHERE_EMBEDDING_MODEL = os.getenv(
+    "COHERE_EMBEDDING_MODEL", "embed-multilingual-v3.0"
+)  # 多语言模型支持中文
 
 # 向量数据库配置
 VECTOR_DB_PATH = os.getenv("VECTOR_DB_PATH", "./index/faiss_store")
@@ -37,13 +38,15 @@ if not os.path.isabs(VECTOR_DB_PATH):
     VECTOR_DB_PATH = os.path.join(project_root, VECTOR_DB_PATH)
 
 if not os.path.exists(os.path.dirname(VECTOR_DB_PATH)):
-     os.makedirs(os.path.dirname(VECTOR_DB_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(VECTOR_DB_PATH), exist_ok=True)
 
 # 嵌入模型配置 - 确保始终使用环境变量中的设置
 # 从环境变量中直接获取，不使用os.getenv，因为os.getenv会回退到默认值
 # 默认模型为 all-MiniLM-L6-v2
 EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
-print(f"[Config] Effective EMBEDDING_MODEL_NAME: {EMBEDDING_MODEL_NAME}") # 增加日志确认模型名称
+print(
+    f"[Config] Effective EMBEDDING_MODEL_NAME: {EMBEDDING_MODEL_NAME}"
+)  # 增加日志确认模型名称
 
 # 上传文件存储路径
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./data/uploaded_files")
@@ -55,7 +58,9 @@ if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # 文件上传限制配置
-MAX_UPLOAD_SIZE_MB = float(os.getenv("MAX_UPLOAD_SIZE_MB", 100))  # 默认限制每个文件最大为 100 MB
+MAX_UPLOAD_SIZE_MB = float(
+    os.getenv("MAX_UPLOAD_SIZE_MB", 100)
+)  # 默认限制每个文件最大为 100 MB
 print(f"[Config] MAX_UPLOAD_SIZE_MB: {MAX_UPLOAD_SIZE_MB}")
 
 # RAG 配置

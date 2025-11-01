@@ -1,0 +1,17 @@
+[tool.ty]
+# 源代码配置
+[[tool.ty.src]]
+root = "backend"
+paths = ["."]
+
+# 环境配置  
+[tool.ty.environment]
+python-version = "3.11"
+# 指定虚拟环境路径
+python = "backend/.venv/bin/python"
+
+# 规则配置
+[tool.ty.rules]
+# 忽略 faiss 的类型提示警告，因为 faiss 是 C++ 扩展，类型提示支持有限
+possibly-missing-attribute = "ignore"
+

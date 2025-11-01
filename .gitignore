@@ -87,3 +87,5 @@ Thumbs.db
 # Deployment files  
 railway-config.txt
 render.yaml
+
+.ruff_cache/

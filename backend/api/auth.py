@@ -2,22 +2,21 @@
 认证 API 路由
 """
 
+from database import get_db
 from fastapi import APIRouter, Depends, HTTPException, status
+from middleware.auth import get_current_active_user, get_current_user
+from models.auth import User
 from pydantic import BaseModel, EmailStr
-from sqlalchemy.orm import Session
-
-from ..database import get_db
-from ..middleware.auth import get_current_active_user, get_current_user
-from ..models.auth import User
-from ..schemas.auth import (
+from schemas.auth import (
     RefreshTokenRequest,
     Token,
     UserCreate,
     UserLogin,
     UserResponse,
 )
-from ..services.auth_service import AuthService
-from ..utils.auth import verify_token
+from services.auth_service import AuthService
+from sqlalchemy.orm import Session
+from utils.auth import verify_token
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 

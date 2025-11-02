@@ -7,9 +7,8 @@ import os
 from typing import List
 
 import fitz  # PyMuPDF
+from config import CHUNK_OVERLAP, CHUNK_SIZE  # noqa: F401
 from langchain_core.documents import Document as LangchainDocument
-
-from ..config import CHUNK_OVERLAP, CHUNK_SIZE  # noqa: F401
 
 
 def is_ocr_available() -> bool:

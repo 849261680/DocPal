@@ -6,12 +6,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import HTTPException, status
+from models.auth import User, UserSession
+from schemas.auth import UserCreate
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
-
-from ..models.auth import User, UserSession
-from ..schemas.auth import UserCreate
-from ..utils.auth import (
+from utils.auth import (
     create_access_token,
     create_refresh_token,
     get_password_hash,

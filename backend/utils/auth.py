@@ -3,15 +3,12 @@
 """
 
 import os
-import jwt
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from passlib.context import CryptContext
-from jose import JWTError
-from fastapi import HTTPException, status
 
-# 密码加密上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
+from fastapi import HTTPException, status
+from jose import JWTError, jwt
 
 # JWT 配置
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")
@@ -22,12 +19,20 @@ REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
+    # bcrypt有72字节限制，手动截断过长的密码
+    truncated_password = plain_password[:72] if len(plain_password.encode('utf-8')) > 72 else plain_password
+    try:
+        return bcrypt.checkpw(truncated_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
     """生成密码哈希"""
-    return pwd_context.hash(password)
+    # bcrypt有72字节限制，手动截断过长的密码
+    truncated_password = password[:72] if len(password.encode('utf-8')) > 72 else password
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(truncated_password.encode('utf-8'), salt).decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

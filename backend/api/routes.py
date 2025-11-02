@@ -8,6 +8,7 @@ from datetime import datetime
 # 这样可以避免从 TypeScript 文件导入的问题
 from enum import Enum
 
+from config import MAX_UPLOAD_SIZE_MB, TOP_K_RESULTS
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -18,14 +19,12 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.responses import FileResponse, StreamingResponse
-
-from ..config import MAX_UPLOAD_SIZE_MB, TOP_K_RESULTS
-from ..services.document_loader import (
+from services.document_loader import (
     load_document,
     save_uploaded_file,
     split_documents,
 )
-from ..services.document_storage import (
+from services.document_storage import (
     DocumentInfo,
     clear_all_documents,
     delete_document,
@@ -34,8 +33,9 @@ from ..services.document_storage import (
     save_document_info,
     update_document_status,
 )
-from ..services.rag import query_rag_pipeline, query_rag_pipeline_stream
-from ..services.vector_store import FAISSVectorStore, get_vector_store
+from services.rag import query_rag_pipeline, query_rag_pipeline_stream
+from services.vector_store import FAISSVectorStore, get_vector_store
+
 from .auth import router as auth_router
 from .models import (
     AskRequest,

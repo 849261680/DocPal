@@ -4,12 +4,11 @@ from typing import Callable, List
 
 import docx2txt
 import fitz  # PyMuPDF
+from config import CHUNK_OVERLAP, CHUNK_SIZE, UPLOAD_DIR
 from langchain_core.documents import Document as LangchainDocument
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-from ..config import CHUNK_OVERLAP, CHUNK_SIZE, UPLOAD_DIR
-from ..utils.file_utils import ensure_directory, get_safe_filename
-from .ocr_processor import process_scanned_pdf
+from services.ocr_processor import process_scanned_pdf
+from utils.file_utils import ensure_directory, get_safe_filename
 
 # 确保上传目录存在 (虽然 config.py 也做了，但这里作为服务自身依赖明确一下)
 ensure_directory(UPLOAD_DIR)

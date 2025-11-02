@@ -5,12 +5,13 @@ os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # 也禁用 tokenizers 的并行处理
 
 # FastAPI 启动入口
+import sys
 from contextlib import asynccontextmanager
+from datetime import datetime  # 新增: 用于健康检查端点返回当前时间
+
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-import sys
-from datetime import datetime  # 新增: 用于健康检查端点返回当前时间
 
 # 将当前目录添加到Python路径，确保可以导入同级模块
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -34,8 +35,9 @@ async def lifespan(app: FastAPI):
     # 初始化数据库表
     try:
         print("正在初始化数据库...")
-        from database import create_tables, DB_PATH
         import sqlite3
+
+        from database import DB_PATH, create_tables
 
         create_tables()
         print("数据库表已创建。")
@@ -92,6 +94,8 @@ default_origins = [
     "https://ragsys.vercel.app",  # Vercel前端
     "http://localhost:5173",  # 本地开发环境 (Vite)
     "http://localhost:3000",  # 本地开发环境 (CRA)
+    "http://127.0.0.1:5173",  # 本地开发环境 (Vite)
+    "http://127.0.0.1:3000",  # 本地开发环境 (CRA)
 ]
 
 # 从环境变量中获取CORS配置

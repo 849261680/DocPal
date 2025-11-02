@@ -4,14 +4,13 @@
 
 from typing import Optional
 
+from database import get_db
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from models.auth import User
+from services.auth_service import AuthService
 from sqlalchemy.orm import Session
-
-from ..database import get_db
-from ..models.auth import User
-from ..services.auth_service import AuthService
-from ..utils.auth import verify_token
+from utils.auth import verify_token
 
 # HTTP Bearer 认证方案
 security = HTTPBearer()

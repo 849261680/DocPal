@@ -4,15 +4,14 @@ import json
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import httpx
-
-from ..api.models import SourceDocument
-from ..config import (
+from api.models import SourceDocument
+from config import (
     CHAT_MODEL,
     DEEPSEEK_API_BASE_URL,
     DEEPSEEK_API_KEY,
     TOP_K_RESULTS,
 )
-from .vector_store import LangchainDocument, get_vector_store
+from services.vector_store import LangchainDocument, get_vector_store
 
 
 async def generate_answer_from_llm_stream(
@@ -103,8 +102,16 @@ async def generate_answer_from_llm_stream(
                                 continue
 
         except httpx.HTTPStatusError as e:
+            # 对于流式响应，需要先读取响应内容
+            error_content = ""
+            try:
+                error_content = e.response.text
+            except Exception:
+                # 如果无法读取响应内容，使用状态码信息
+                error_content = f"HTTP {e.response.status_code}"
+            
             print(
-                f"DeepSeek API 请求失败，状态码: {e.response.status_code}, 响应: {e.response.text}"
+                f"DeepSeek API 请求失败，状态码: {e.response.status_code}, 响应: {error_content}"
             )
             yield {"error": f"与语言模型通信时出错 (HTTP {e.response.status_code})"}
         except httpx.RequestError as e:

@@ -5,10 +5,9 @@ from typing import Any, List, Optional, Tuple
 
 import faiss  # type: ignore
 import numpy as np
+from config import TOP_K_RESULTS, VECTOR_DB_PATH
 from langchain_core.documents import Document as LangchainDocument
-
-from ..config import TOP_K_RESULTS, VECTOR_DB_PATH
-from .embedding import (
+from services.embedding import (
     generate_embeddings,
     get_embedding_dimension,
     get_embedding_model,

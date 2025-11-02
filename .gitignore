@@ -50,8 +50,7 @@ MANIFEST
 # Data and Index files
 index/faiss_store.index
 index/faiss_store.meta.pkl
-data/uploaded_files/
-data/document_metadata.json
+data/
 uploads/
 backend/data/uploaded_files/
 backend/index/

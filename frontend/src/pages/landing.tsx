@@ -116,7 +116,7 @@ export default function LandingPage() {
               onClick={handleGetStarted}
             >
               <Zap className="h-5 w-5 mr-2" />
-              立即开始使用
+              立即使用
             </Button>
             <Button
               size="lg"

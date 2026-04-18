@@ -16,7 +16,6 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
   const [canClose, setCanClose] = useState(false);
 
   useEffect(() => {
-    // Allow closing when all documents are processed
     if (processingDocuments.length === 0 && !isLoading) {
       setCanClose(true);
     } else {
@@ -30,35 +29,35 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
         if (document.status === ProcessingStatus.EXTRACTING) {
           return { status: "processing", progress: document.progress };
         }
-        if (document.status === ProcessingStatus.CHUNKING || 
-            document.status === ProcessingStatus.EMBEDDING || 
-            document.status === ProcessingStatus.INDEXING || 
+        if (document.status === ProcessingStatus.CHUNKING ||
+            document.status === ProcessingStatus.EMBEDDING ||
+            document.status === ProcessingStatus.INDEXING ||
             document.status === ProcessingStatus.COMPLETED) {
           return { status: "completed", progress: 100 };
         }
         return { status: "pending", progress: 0 };
-        
+
       case "chunking":
         if (document.status === ProcessingStatus.CHUNKING) {
           return { status: "processing", progress: document.progress };
         }
-        if (document.status === ProcessingStatus.EMBEDDING || 
-            document.status === ProcessingStatus.INDEXING || 
+        if (document.status === ProcessingStatus.EMBEDDING ||
+            document.status === ProcessingStatus.INDEXING ||
             document.status === ProcessingStatus.COMPLETED) {
           return { status: "completed", progress: 100 };
         }
         return { status: "pending", progress: 0 };
-        
+
       case "embedding":
         if (document.status === ProcessingStatus.EMBEDDING) {
           return { status: "processing", progress: document.progress };
         }
-        if (document.status === ProcessingStatus.INDEXING || 
+        if (document.status === ProcessingStatus.INDEXING ||
             document.status === ProcessingStatus.COMPLETED) {
           return { status: "completed", progress: 100 };
         }
         return { status: "pending", progress: 0 };
-        
+
       case "indexing":
         if (document.status === ProcessingStatus.INDEXING) {
           return { status: "processing", progress: document.progress };
@@ -67,7 +66,7 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
           return { status: "completed", progress: 100 };
         }
         return { status: "pending", progress: 0 };
-        
+
       default:
         return { status: "pending", progress: 0 };
     }
@@ -77,43 +76,42 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
     if (processingDocuments.length === 0) {
       return (
         <div className="text-center py-4">
-          <p className="text-neutral-600">当前没有正在处理的文档。</p>
+          <p className="text-[#646464]">当前没有正在处理的文档。</p>
         </div>
       );
     }
 
-    // Just show the most recent document being processed
     const document = processingDocuments[0];
-    
+
     return (
       <div className="space-y-4">
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-neutral-700">文本提取</span>
+            <span className="font-medium text-[#202020]">文本提取</span>
             <StatusLabel status={getStepStatus("extracting", document)} />
           </div>
           <Progress value={getStepStatus("extracting", document).progress} className="h-1.5" />
         </div>
-        
+
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-neutral-700">文本分块与清洗</span>
+            <span className="font-medium text-[#202020]">文本分块与清洗</span>
             <StatusLabel status={getStepStatus("chunking", document)} />
           </div>
           <Progress value={getStepStatus("chunking", document).progress} className="h-1.5" />
         </div>
-        
+
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-neutral-700">向量嵌入</span>
+            <span className="font-medium text-[#202020]">向量嵌入</span>
             <StatusLabel status={getStepStatus("embedding", document)} />
           </div>
           <Progress value={getStepStatus("embedding", document).progress} className="h-1.5" />
         </div>
-        
+
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-neutral-700">建立索引</span>
+            <span className="font-medium text-[#202020]">建立索引</span>
             <StatusLabel status={getStepStatus("indexing", document)} />
           </div>
           <Progress value={getStepStatus("indexing", document).progress} className="h-1.5" />
@@ -126,29 +124,22 @@ export default function ProcessingModal({ isOpen, onClose }: ProcessingModalProp
     <Dialog open={isOpen} onOpenChange={canClose ? onClose : undefined}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-            <Cog className="text-primary h-8 w-8 animate-pulse" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#ea2804]/10 flex items-center justify-center">
+            <Cog className="text-[#ea2804] h-8 w-8 animate-pulse" />
           </div>
-          <DialogTitle className="text-center">文档处理中</DialogTitle>
-          <p className="text-center text-neutral-600 text-sm mt-1">
+          <DialogTitle className="text-center text-[#202020]">文档处理中</DialogTitle>
+          <p className="text-center text-[#646464] text-sm mt-1">
             根据文档大小，这可能需要几分钟时间
           </p>
         </DialogHeader>
-        
+
         {renderProcessingSteps()}
-        
+
         <DialogFooter className="mt-6 flex justify-between">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={!canClose}
-          >
+          <Button variant="outline" onClick={onClose} disabled={!canClose}>
             取消
           </Button>
-          <Button
-            onClick={onClose}
-            disabled={!canClose}
-          >
+          <Button onClick={onClose} disabled={!canClose}>
             {canClose ? "关闭" : "处理中..."}
           </Button>
         </DialogFooter>
@@ -167,15 +158,15 @@ interface StatusLabelProps {
 function StatusLabel({ status }: StatusLabelProps) {
   if (status.status === "completed") {
     return (
-      <span className="text-success flex items-center">
+      <span className="text-[#2b9a66] flex items-center">
         <CheckCircle className="h-3 w-3 mr-1" /> 完成
       </span>
     );
   }
-  
+
   if (status.status === "processing") {
-    return <span className="text-neutral-700">{status.progress}%</span>;
+    return <span className="text-[#202020]">{status.progress}%</span>;
   }
-  
-  return <span className="text-neutral-500">等待中...</span>;
+
+  return <span className="text-[#8d8d8d]">等待中...</span>;
 }

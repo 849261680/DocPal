@@ -41,12 +41,12 @@ fi
 
 echo "🔧 环境配置:"
 echo "   - 框架: Vite + React"
-echo "   - 默认端口: 5173"
+echo "   - 默认端口: 3004"
 echo "   - 环境: development"
 
 # 启动前端开发服务器
 echo "🎯 启动 Vite 开发服务器..."
-echo "📱 前端服务将在 http://localhost:5173 启动"
+echo "📱 前端服务将在 http://localhost:3004 启动"
 echo "💡 提示: 按 Ctrl+C 停止服务"
 
 npm run dev

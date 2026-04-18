@@ -16,7 +16,6 @@ interface SourceItem {
 export default function SourcePanel() {
   const [selectedSources, setSelectedSources] = useState<SourceItem[]>([]);
 
-  // Mock data for demonstration
   const mockSources: SourceItem[] = [
     {
       id: "1",
@@ -28,7 +27,7 @@ export default function SourcePanel() {
       section: "段落3"
     },
     {
-      id: "2", 
+      id: "2",
       title: "用户反馈汇总.xlsx",
       type: "Excel",
       relevance: 88,
@@ -38,7 +37,7 @@ export default function SourcePanel() {
     },
     {
       id: "3",
-      title: "竞品分析报告.docx", 
+      title: "竞品分析报告.docx",
       type: "Word",
       relevance: 76,
       content: "竞品在用户体验方面的优势主要体现在个性化推荐系统和响应速度优化，建议我们在推荐算法方面加大投入...",
@@ -47,17 +46,13 @@ export default function SourcePanel() {
     }
   ];
 
-  const totalSources = 127;
-  const totalAnswers = 1234;
-  const accuracy = 92;
-
   return (
-    <aside className="w-80 bg-white border-l border-gray-200 flex flex-col">
+    <aside className="w-80 bg-white border-l border-[#202020]/10 flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-[#202020]/10">
         <div className="flex items-center gap-2 mb-3">
-          <BookOpen className="h-5 w-5 text-blue-600" />
-          <h2 className="font-semibold text-gray-800">引用来源</h2>
+          <BookOpen className="h-5 w-5 text-[#ea2804]" />
+          <h2 className="font-semibold text-[#202020]">引用来源</h2>
         </div>
       </div>
 
@@ -65,30 +60,30 @@ export default function SourcePanel() {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-3">
           {mockSources.map((source, index) => (
-            <Card key={source.id} className="p-3 hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
+            <Card key={source.id} className="p-3 hover:border-[#ea2804] transition-colors border-l-4 border-l-[#ea2804]">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 font-semibold text-sm">{index + 1}</span>
+                  <div className="w-8 h-8 bg-[#ea2804]/10 rounded-full flex items-center justify-center">
+                    <span className="text-[#ea2804] font-semibold text-sm">{index + 1}</span>
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <FileText className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-800 truncate">
+                    <FileText className="h-4 w-4 text-[#8d8d8d]" />
+                    <span className="text-sm font-medium text-[#202020] truncate">
                       {source.title}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-600 mb-2 line-clamp-3">
+                  <p className="text-xs text-[#646464] mb-2 line-clamp-3">
                     "{source.content}"
                   </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-[#8d8d8d]">
                       {source.section}
                     </span>
                     <div className="flex items-center gap-1">
-                      <BarChart3 className="h-3 w-3 text-green-500" />
-                      <span className="text-xs font-medium text-green-600">
+                      <BarChart3 className="h-3 w-3 text-[#2b9a66]" />
+                      <span className="text-xs font-medium text-[#2b9a66]">
                         {source.relevance}%
                       </span>
                     </div>
@@ -99,7 +94,6 @@ export default function SourcePanel() {
           ))}
         </div>
       </div>
-
     </aside>
   );
 }

@@ -5,8 +5,7 @@ import { useDocuments } from "@/hooks/use-documents";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, RefreshCw, Trash2, Upload, Search, Database, FileText, FolderOpen, ChevronRight, ChevronDown, Folder, File } from "lucide-react";
-import { queryClient } from "@/lib/queryClient";
-import { getApiBaseUrl } from "@/lib/queryClient";
+import { queryClient, getApiBaseUrl } from "@/lib/queryClient";
 import { DocumentMetadata } from "@/lib/api";
 
 interface DocumentCategory {
@@ -30,17 +29,16 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['all']));
-  
+
   const uploadFiles = async (files: FileList) => {
     setIsUploading(true);
-    
+
     try {
       const baseApiUrl = getApiBaseUrl();
-      
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        
-        // 检查文件类型
+
         const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
         if (!validTypes.includes(file.type)) {
           toast({
@@ -50,9 +48,8 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
           });
           continue;
         }
-        
-        // 检查文件大小
-        const maxSize = 100 * 1024 * 1024; // 100MB
+
+        const maxSize = 100 * 1024 * 1024;
         if (file.size > maxSize) {
           toast({
             title: "文件太大",
@@ -61,39 +58,37 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
           });
           continue;
         }
-        
-        // 显示上传进度
+
         toast({
           title: `上传中 (${i + 1}/${files.length})`,
           description: `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
         });
-        
+
         const formData = new FormData();
         formData.append("file", file);
-        
+
         const uploadUrl = `${baseApiUrl}/api/upload_doc/`;
         const response = await fetch(uploadUrl, {
           method: "POST",
           body: formData,
           credentials: 'omit'
         });
-        
+
         if (!response.ok) {
           throw new Error(`上传 ${file.name} 失败`);
         }
-        
+
         console.log(`文件 ${file.name} 上传成功`);
       }
-      
-      // 刷新文档列表
+
       queryClient.invalidateQueries({ queryKey: [`${baseApiUrl}/api/documents`] });
       queryClient.invalidateQueries({ queryKey: [`${baseApiUrl}/api/vector_store_size`] });
-      
+
       toast({
         title: "上传成功",
         description: "文档已上传并正在处理中"
       });
-      
+
     } catch (error) {
       console.error("Upload error:", error);
       toast({
@@ -105,7 +100,7 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
       setIsUploading(false);
     }
   };
-  
+
   const handleUploadClick = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -165,7 +160,6 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
     }
   };
 
-  // Categorize documents
   const categorizeDocuments = (): DocumentCategory[] => {
     const categories: DocumentCategory[] = [
       {
@@ -179,8 +173,8 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
         id: 'reports',
         name: '技术文档',
         icon: <FileText className="h-4 w-4" />,
-        documents: documents.filter(doc => 
-          (doc.filename.includes('报告') || doc.filename.includes('.md')) && 
+        documents: documents.filter(doc =>
+          (doc.filename.includes('报告') || doc.filename.includes('.md')) &&
           doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
         )
       },
@@ -188,8 +182,8 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
         id: 'operations',
         name: '运营资料',
         icon: <Folder className="h-4 w-4" />,
-        documents: documents.filter(doc => 
-          (doc.filename.includes('运营') || doc.filename.includes('策略')) && 
+        documents: documents.filter(doc =>
+          (doc.filename.includes('运营') || doc.filename.includes('策略')) &&
           doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
         )
       },
@@ -197,13 +191,13 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
         id: 'meetings',
         name: '会议纪要',
         icon: <FolderOpen className="h-4 w-4" />,
-        documents: documents.filter(doc => 
-          doc.filename.includes('会议') && 
+        documents: documents.filter(doc =>
+          doc.filename.includes('会议') &&
           doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
         )
       }
     ];
-    
+
     return categories.filter(cat => cat.documents.length > 0 || cat.id === 'all');
   };
 
@@ -223,7 +217,7 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
     if (!confirm(`确定要删除 "${filename}" 吗？`)) {
       return;
     }
-    
+
     try {
       await apiRequest("DELETE", `/api/documents/${filename}`, {});
       queryClient.invalidateQueries({ queryKey: [`${getApiBaseUrl()}/api/documents`] });
@@ -242,12 +236,12 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
   };
 
   return (
-    <aside className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-sm flex-shrink-0">
+    <aside className="w-80 bg-white border-r border-[#202020]/10 flex flex-col flex-shrink-0">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-[#202020]/10">
         <div className="mb-4">
-          <Button 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white mb-3"
+          <Button
+            className="w-full bg-[#202020] hover:bg-[#202020]/90 text-[#fcfcfc] mb-3"
             onClick={handleUploadClick}
             disabled={isUploading}
           >
@@ -264,9 +258,9 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
             )}
           </Button>
         </div>
-        
+
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#8d8d8d]" />
           <Input
             placeholder="搜索文档..."
             value={searchQuery}
@@ -280,50 +274,50 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
       <div className="flex-1 overflow-y-auto">
         <div className="space-y-1">
           {categories.map((category) => (
-            <div key={category.id} className="">
+            <div key={category.id}>
               <button
                 onClick={() => toggleCategory(category.id)}
-                className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-[#202020]/5 transition-colors"
               >
                 {expandedCategories.has(category.id) ? (
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                  <ChevronDown className="h-4 w-4 text-[#646464]" />
                 ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-500" />
+                  <ChevronRight className="h-4 w-4 text-[#646464]" />
                 )}
                 {category.icon}
-                <span className="text-sm font-medium text-gray-700">{category.name}</span>
+                <span className="text-sm font-medium text-[#202020]">{category.name}</span>
                 {category.documents.length > 0 && (
-                  <span className="text-xs text-gray-500 ml-auto">
+                  <span className="text-xs text-[#8d8d8d] ml-auto">
                     {category.documents.length}
                   </span>
                 )}
               </button>
-              
+
               {expandedCategories.has(category.id) && (
                 <div className="ml-6 space-y-1">
                   {category.documents.length === 0 ? (
                     <div className="text-center py-4">
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-[#8d8d8d]">
                         {searchQuery ? "没有找到匹配的文档" : "暂无文档"}
                       </p>
                     </div>
                   ) : (
                     category.documents.map((doc) => (
-                      <div 
-                        key={doc.filename} 
-                        className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 rounded-md group cursor-pointer transition-colors ${
-                          selectedFile?.filename === doc.filename ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                      <div
+                        key={doc.filename}
+                        className={`flex items-center gap-2 px-4 py-2 hover:bg-[#202020]/5 rounded-full group cursor-pointer transition-colors ${
+                          selectedFile?.filename === doc.filename ? 'bg-[#ea2804]/5 border-l-4 border-[#ea2804]' : ''
                         }`}
                         onClick={() => onFileSelect?.(doc)}
                       >
-                        <File className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <File className="h-4 w-4 text-[#8d8d8d] flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm truncate ${
-                            selectedFile?.filename === doc.filename ? 'text-blue-700 font-medium' : 'text-gray-700'
+                            selectedFile?.filename === doc.filename ? 'text-[#ea2804] font-medium' : 'text-[#202020]'
                           }`}>
                             {doc.filename}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-[#8d8d8d]">
                             {(doc.file_size / 1024 / 1024).toFixed(1)}MB
                           </p>
                         </div>
@@ -334,7 +328,7 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
                             e.stopPropagation();
                             handleDeleteDocument(doc.filename);
                           }}
-                          className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-auto transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 text-[#ea2804] hover:text-[#ea2804] hover:bg-[#ea2804]/10 p-1 h-auto transition-opacity"
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -349,7 +343,7 @@ export default function DocumentPanel({ onFileSelect, selectedFile }: DocumentPa
       </div>
 
       {/* Footer actions */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-[#202020]/10">
         <div className="flex gap-2">
           <Button
             variant="outline"

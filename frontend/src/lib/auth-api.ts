@@ -3,7 +3,7 @@
  */
 import { LoginRequest, RegisterRequest, TokenResponse, User } from '@/types/auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8004';
 
 export class AuthAPI {
   private static getAuthHeaders(): Record<string, string> {

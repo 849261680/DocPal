@@ -1,6 +1,3 @@
-/**
- * 设置页面
- */
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useLocation } from 'wouter';
@@ -9,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, User, Mail, Building, Key, Save, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, User, Key, Save, Eye, EyeOff } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user, updateUserProfile } = useAuth();
@@ -38,30 +35,18 @@ export default function SettingsPage() {
   };
 
   const validateUsername = (username: string): string | null => {
-    if (!username.trim()) {
-      return '用户名不能为空';
-    }
-    if (username.length < 3) {
-      return '用户名长度至少为3个字符';
-    }
-    if (username.length > 50) {
-      return '用户名长度不能超过50个字符';
-    }
+    if (!username.trim()) return '用户名不能为空';
+    if (username.length < 3) return '用户名长度至少为3个字符';
+    if (username.length > 50) return '用户名长度不能超过50个字符';
     return null;
   };
 
   const validatePassword = (password: string): string | null => {
-    if (!password) {
-      return '密码不能为空';
-    }
-    if (password.length < 8) {
-      return '密码长度至少为8个字符';
-    }
+    if (!password) return '密码不能为空';
+    if (password.length < 8) return '密码长度至少为8个字符';
     const hasLetter = /[a-zA-Z]/.test(password);
     const hasNumber = /\d/.test(password);
-    if (!hasLetter || !hasNumber) {
-      return '密码必须包含字母和数字';
-    }
+    if (!hasLetter || !hasNumber) return '密码必须包含字母和数字';
     return null;
   };
 
@@ -74,7 +59,6 @@ export default function SettingsPage() {
     setMessage(null);
 
     try {
-      // 验证表单
       if (!passwordForm.currentPassword) {
         setMessage({ type: 'error', text: '请输入当前密码' });
         return;
@@ -96,13 +80,11 @@ export default function SettingsPage() {
         return;
       }
 
-      // 调用密码修改API
       await updateUserProfile({
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword
       });
 
-      // 重置表单
       setPasswordForm({
         currentPassword: '',
         newPassword: '',
@@ -123,7 +105,6 @@ export default function SettingsPage() {
     setMessage(null);
 
     try {
-      // 验证用户名
       const usernameError = validateUsername(username);
       if (usernameError) {
         setMessage({ type: 'error', text: usernameError });
@@ -131,7 +112,6 @@ export default function SettingsPage() {
         return;
       }
 
-      // 检查用户名是否有变化
       if (username !== user.username) {
         console.log('更新用户名:', { oldUsername: user.username, newUsername: username });
         await updateUserProfile({ username });
@@ -145,10 +125,10 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-blue-700 backdrop-blur-xl border-none text-white px-6 py-2 shadow-[0_4px_12px_rgba(0,0,0,0.15)]">
-        <div className="flex items-center gap-4">
+      <header className="bg-[#202020] text-white px-6 py-3">
+        <div className="max-w-4xl mx-auto flex items-center gap-4">
           <Button
             variant="ghost"
             size="sm"
@@ -158,7 +138,9 @@ export default function SettingsPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             返回
           </Button>
-          <h1 className="text-2xl font-bold">设置</h1>
+          <h1 className="text-xl font-bold" style={{ fontFamily: "'Space Grotesk', 'Noto Sans SC', sans-serif" }}>
+            设置
+          </h1>
         </div>
       </header>
 
@@ -172,10 +154,10 @@ export default function SettingsPage() {
                 <nav className="space-y-2">
                   <button
                     onClick={() => setActiveTab('profile')}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                    className={`w-full text-left px-3 py-2 rounded-full transition-colors text-sm ${
                       activeTab === 'profile'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'hover:bg-gray-100'
+                        ? 'bg-[#ea2804]/10 text-[#ea2804] font-medium'
+                        : 'text-[#646464] hover:bg-[#202020]/5'
                     }`}
                   >
                     <User className="inline h-4 w-4 mr-2" />
@@ -183,10 +165,10 @@ export default function SettingsPage() {
                   </button>
                   <button
                     onClick={() => setActiveTab('security')}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                    className={`w-full text-left px-3 py-2 rounded-full transition-colors text-sm ${
                       activeTab === 'security'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'hover:bg-gray-100'
+                        ? 'bg-[#ea2804]/10 text-[#ea2804] font-medium'
+                        : 'text-[#646464] hover:bg-[#202020]/5'
                     }`}
                   >
                     <Key className="inline h-4 w-4 mr-2" />
@@ -200,8 +182,8 @@ export default function SettingsPage() {
           {/* Content */}
           <div className="md:col-span-3">
             {message && (
-              <Alert className={`mb-4 ${message.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}>
-                <AlertDescription className={message.type === 'error' ? 'text-red-800' : 'text-green-800'}>
+              <Alert className={`mb-4 ${message.type === 'error' ? 'border-[#ea2804]/30 bg-[#ea2804]/5' : 'border-[#2b9a66]/30 bg-[#2b9a66]/5'}`}>
+                <AlertDescription className={message.type === 'error' ? 'text-[#ea2804]' : 'text-[#2b9a66]'}>
                   {message.text}
                 </AlertDescription>
               </Alert>
@@ -210,8 +192,8 @@ export default function SettingsPage() {
             {activeTab === 'profile' && (
               <Card>
                 <CardHeader>
-                  <CardTitle>个人资料</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-[#202020]">个人资料</CardTitle>
+                  <CardDescription className="text-[#8d8d8d]">
                     管理您的个人信息
                   </CardDescription>
                 </CardHeader>
@@ -228,7 +210,7 @@ export default function SettingsPage() {
                         maxLength={50}
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="email">邮箱</Label>
                       <Input
@@ -236,11 +218,10 @@ export default function SettingsPage() {
                         type="email"
                         defaultValue={user.email}
                         disabled
-                        className="bg-gray-50"
+                        className="bg-[#f5f5f5]"
                       />
                     </div>
                   </div>
-
                 </CardContent>
               </Card>
             )}
@@ -248,20 +229,19 @@ export default function SettingsPage() {
             {activeTab === 'security' && (
               <Card>
                 <CardHeader>
-                  <CardTitle>安全设置</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-[#202020]">安全设置</CardTitle>
+                  <CardDescription className="text-[#8d8d8d]">
                     管理您的账户安全
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
-                    <h3 className="font-medium">修改密码</h3>
-                    <p className="text-sm text-gray-600">
+                    <h3 className="font-medium text-[#202020]">修改密码</h3>
+                    <p className="text-sm text-[#646464]">
                       定期更改密码有助于保护您的账户安全
                     </p>
-                    
+
                     <div className="space-y-4 max-w-md">
-                      {/* 当前密码 */}
                       <div className="space-y-2">
                         <Label htmlFor="currentPassword">当前密码</Label>
                         <div className="relative">
@@ -274,7 +254,7 @@ export default function SettingsPage() {
                           />
                           <button
                             type="button"
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#8d8d8d] hover:text-[#202020]"
                             onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
                           >
                             {showPasswords.current ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -282,7 +262,6 @@ export default function SettingsPage() {
                         </div>
                       </div>
 
-                      {/* 新密码 */}
                       <div className="space-y-2">
                         <Label htmlFor="newPassword">新密码</Label>
                         <div className="relative">
@@ -295,29 +274,28 @@ export default function SettingsPage() {
                           />
                           <button
                             type="button"
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#8d8d8d] hover:text-[#202020]"
                             onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
                           >
                             {showPasswords.new ? <EyeOff size={20} /> : <Eye size={20} />}
                           </button>
                         </div>
-                        <div className="text-xs text-gray-500 space-y-1">
+                        <div className="text-xs text-[#646464] space-y-1">
                           <p>密码必须包含：</p>
                           <ul className="list-disc list-inside space-y-1">
-                            <li className={passwordForm.newPassword.length >= 8 ? 'text-green-600' : 'text-gray-500'}>
+                            <li className={passwordForm.newPassword.length >= 8 ? 'text-[#2b9a66]' : 'text-[#8d8d8d]'}>
                               至少8个字符
                             </li>
-                            <li className={/[a-zA-Z]/.test(passwordForm.newPassword) ? 'text-green-600' : 'text-gray-500'}>
+                            <li className={/[a-zA-Z]/.test(passwordForm.newPassword) ? 'text-[#2b9a66]' : 'text-[#8d8d8d]'}>
                               至少一个字母
                             </li>
-                            <li className={/\d/.test(passwordForm.newPassword) ? 'text-green-600' : 'text-gray-500'}>
+                            <li className={/\d/.test(passwordForm.newPassword) ? 'text-[#2b9a66]' : 'text-[#8d8d8d]'}>
                               至少一个数字
                             </li>
                           </ul>
                         </div>
                       </div>
 
-                      {/* 确认新密码 */}
                       <div className="space-y-2">
                         <Label htmlFor="confirmPassword">确认新密码</Label>
                         <div className="relative">
@@ -330,18 +308,17 @@ export default function SettingsPage() {
                           />
                           <button
                             type="button"
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#8d8d8d] hover:text-[#202020]"
                             onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
                           >
                             {showPasswords.confirm ? <EyeOff size={20} /> : <Eye size={20} />}
                           </button>
                         </div>
                         {passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword && (
-                          <p className="text-xs text-red-500">密码不一致</p>
+                          <p className="text-xs text-[#ea2804]">密码不一致</p>
                         )}
                       </div>
 
-                      {/* 修改密码按钮 */}
                       <Button
                         onClick={handlePasswordSubmit}
                         disabled={
@@ -356,7 +333,7 @@ export default function SettingsPage() {
                       >
                         {isLoading ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#fcfcfc] mr-2"></div>
                             修改中...
                           </>
                         ) : (
@@ -372,7 +349,6 @@ export default function SettingsPage() {
               </Card>
             )}
 
-            {/* Save Button - 只在个人资料页面显示 */}
             {activeTab === 'profile' && (
               <div className="mt-6 flex justify-end">
                 <Button
@@ -382,7 +358,7 @@ export default function SettingsPage() {
                 >
                   {isLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#fcfcfc] mr-2"></div>
                       保存中...
                     </>
                   ) : (

@@ -22,12 +22,12 @@
 }
 
 .markdown-content pre {
-  border-radius: 0.5rem;
+  border-radius: 16px;
   overflow-x: auto;
 }
 
 .markdown-content code {
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: 'JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
 }
 
 .markdown-content table {
@@ -44,7 +44,7 @@
 .markdown-content hr {
   border: none;
   height: 1px;
-  background-color: #e5e7eb;
+  background-color: #bbbbbb;
   margin: 1.5rem 0;
 }
 
@@ -60,15 +60,15 @@
 }
 
 .markdown-content pre::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(32, 32, 32, 0.1);
   border-radius: 4px;
 }
 
 .markdown-content pre::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(32, 32, 32, 0.3);
   border-radius: 4px;
 }
 
 .markdown-content pre::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(32, 32, 32, 0.5);
 }

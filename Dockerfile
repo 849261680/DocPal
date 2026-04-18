@@ -25,10 +25,10 @@ COPY backend ./backend
 
 # 设置环境变量
 ENV PYTHONPATH=/app
-ENV PORT=8000
+ENV PORT=8004
 
 # 暴露端口
-EXPOSE 8000
+EXPOSE 8004
 
 # 切换到backend目录
 WORKDIR /app/backend

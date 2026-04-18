@@ -92,10 +92,8 @@ app = FastAPI(
 default_origins = [
     "https://enterprise-knowledge-hub.vercel.app",  # Vercel前端
     "https://ragsys.vercel.app",  # Vercel前端
-    "http://localhost:5173",  # 本地开发环境 (Vite)
-    "http://localhost:3000",  # 本地开发环境 (CRA)
-    "http://127.0.0.1:5173",  # 本地开发环境 (Vite)
-    "http://127.0.0.1:3000",  # 本地开发环境 (CRA)
+    "http://localhost:3004",  # 本地开发环境
+    "http://127.0.0.1:3004",  # 本地开发环境
 ]
 
 # 从环境变量中获取CORS配置
@@ -151,7 +149,7 @@ async def health_check():
 if __name__ == "__main__":
     # 从环境变量获取端口，如果未设置则默认为 8000
     # Uvicorn 的 --port 参数会覆盖这里的 host 和 port
-    port = int(os.getenv("BACKEND_PORT", "8002"))
+    port = int(os.getenv("BACKEND_PORT", "8004"))
     host = os.getenv("BACKEND_HOST", "0.0.0.0")  # 默认监听所有网络接口，确保外部可访问
 
     print(f"准备在 {host}:{port} 启动 Uvicorn 服务器...")

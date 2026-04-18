@@ -132,22 +132,22 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#8d8d8d] hover:text-[#202020]"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-            <div className="text-xs text-gray-500 space-y-1">
+            <div className="text-xs text-[#8d8d8d] space-y-1">
               <p>密码必须包含：</p>
               <ul className="list-disc list-inside space-y-1">
-                <li className={formData.password.length >= 8 ? 'text-green-600' : 'text-gray-500'}>
+                <li className={formData.password.length >= 8 ? 'text-[#2b9a66]' : 'text-[#8d8d8d]'}>
                   至少8个字符
                 </li>
-                <li className={/[a-zA-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                <li className={/[a-zA-Z]/.test(formData.password) ? 'text-[#2b9a66]' : 'text-[#8d8d8d]'}>
                   至少一个字母
                 </li>
-                <li className={/\d/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                <li className={/\d/.test(formData.password) ? 'text-[#2b9a66]' : 'text-[#8d8d8d]'}>
                   至少一个数字
                 </li>
               </ul>
@@ -169,14 +169,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#8d8d8d] hover:text-[#202020]"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
             {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-              <p className="text-xs text-red-500">密码不一致</p>
+              <p className="text-xs text-[#ea2804]">密码不一致</p>
             )}
           </div>
 
@@ -187,7 +187,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#fcfcfc] mr-2"></div>
                 注册中...
               </>
             ) : (
@@ -199,11 +199,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           </Button>
         </form>
 
-        <div className="mt-4 text-center text-sm text-gray-600">
+        <div className="mt-4 text-center text-sm text-[#646464]">
           已有账户？{' '}
           <button
             onClick={onSwitchToLogin}
-            className="text-blue-600 hover:text-blue-800 font-medium"
+            className="text-[#ea2804] font-medium"
           >
             登录
           </button>

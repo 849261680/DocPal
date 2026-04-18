@@ -1,6 +1,3 @@
-/**
- * 用户菜单组件
- */
 import React from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useLocation } from 'wouter';
@@ -39,21 +36,21 @@ export const UserMenu: React.FC = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-3 text-white hover:bg-white/10">
+        <Button variant="ghost" className="flex items-center gap-3 text-[#202020] hover:bg-[#202020]/5">
           <div className="text-right">
             <div className="text-sm font-medium">{user.username}</div>
-            {user.department && <div className="text-xs opacity-75">{user.department}</div>}
+            {user.department && <div className="text-xs text-[#8d8d8d]">{user.department}</div>}
           </div>
-          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-            <UserIcon className="h-4 w-4" />
+          <div className="w-8 h-8 bg-[#202020]/10 rounded-full flex items-center justify-center">
+            <UserIcon className="h-4 w-4 text-[#202020]" />
           </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">{user.username}</p>
-            <p className="text-xs text-gray-500">{user.email}</p>
+            <p className="text-sm font-medium text-[#202020]">{user.username}</p>
+            <p className="text-xs text-[#8d8d8d]">{user.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -62,7 +59,7 @@ export const UserMenu: React.FC = () => {
           <span>设置</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+        <DropdownMenuItem onClick={handleLogout} className="text-[#ea2804]">
           <LogOut className="mr-2 h-4 w-4" />
           <span>退出登录</span>
         </DropdownMenuItem>

@@ -93,12 +93,6 @@ export default function LandingPage() {
       {/* Hero Section - Gradient Blaze */}
       <section className="relative px-6 py-24 md:py-32 overflow-hidden bg-gradient-to-r from-[#ea2804] via-[#dd4425] to-[#e91e9c]">
         <div className="relative max-w-7xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-5 py-2 bg-white/10 border border-white/30 rounded-full text-white text-sm font-medium mb-10">
-            <Zap className="h-4 w-4" />
-            智能文档助手 · 让知识触手可及
-          </div>
-
           {/* Main Heading */}
           <h1
             className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-10 leading-none tracking-tight"
